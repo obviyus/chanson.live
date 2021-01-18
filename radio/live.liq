@@ -95,10 +95,10 @@ thread.run.recurrent(delay=0.,check_if_preferred_livesource(set_is_preferred_liv
 ### Wrap input in a buffer
 srt1 = buffer(id="buffer_srt1",
               fallible=true,
-              max=3.0,
+              max=1.0,
               srt1)
 
-### Tag source with it's name in metadata
+## Tag source with it's name in metadata
 srt1 = source_tag(srt1, "srt1")
 
 srt2 = input.srt(id="input_srt2",
@@ -116,10 +116,10 @@ thread.run.recurrent(delay=0.,check_if_preferred_livesource(set_is_preferred_liv
 ### Wrap input in a buffer
 srt2 = buffer(id="buffer_srt2",
               fallible=true,
-              max=3.0,
+              max=1.0,
               srt2)
 
-### Tag source with it's name in metadata
+## Tag source with it's name in metadata
 srt2 = source_tag(srt2, "srt2")
 
 ### define safe blank source
@@ -138,12 +138,59 @@ end
 
 live = switch(id="switch_live",
               track_sensitive=false,
-              transition_length=5.0,
               [(is_playing("srt1"), srt1),
               (is_playing("srt2"), srt2)])
 
+# live = crossfade(live, smart=true)
+
+
+### WIP, transitions not finished yet
+## Transisitions 
+# A simple (long) cross-fade
+# Use metadata override to make sure transition is long enough.
+def crossfade(a,b)
+  def add_transition_length(_) =
+    [("liq_transition_length","15.")]
+  end
+
+  transition =
+    add(normalize=false,
+          [ sequence([ blank(duration=5.),
+                       fade.in(duration=10.,b) ]),
+            fade.out(duration=10.,a) ])
+end
+
+# # Partially apply next to give it a jingle source.
+# # It will fade out the old source, then play the jingle.
+# # At the same time it fades in the new source.
+# # Use metadata override to make sure transition is long enough.
+# def next(j,a,b)
+#   # This assumes that the jingle is 6 seconds long
+#   def add_transition_length(_) =
+#     [("liq_transition_length","15.")]
+#   end
+
+#   transition =
+#     add(normalize=false,
+#       [ sequence(merge=true,
+#                  [ blank(duration=3.),
+#                    fade.in(duration=6.,b) ]),
+#         sequence([fade.out(duration=9.,a),
+#                   j,blank()]) ])
+# end
+
+# # A transition, which does a cross-fading from A to B
+# # No need to override duration as default value (5 seconds)
+# # is over crossade duration (3 seconds)
+# def transition(a,b)
+#   add(normalize=false,
+#       [ fade.in(duration=3.,b),
+#         fade.out(duration=3.,a) ])
+# end
+
 radio_prod = fallback(id="fallback_prod",
                              track_sensitive=false,
+                            #  transitions=[ crossfade, transition() ],
                              [live, srt1, srt2, safe_blank])
 
 ### Get metrics on output
