@@ -131,3 +131,4 @@ dmypy.json
 # Project Files
 *.ts
 *.m3u8
+hls/
