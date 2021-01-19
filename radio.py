@@ -25,8 +25,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("port", help="telnet port")
     parser.add_argument("command", help="<command>")
-    parser.add_argument("parameter", nargs='?', default="",
-                        help="command parameter")
+    parser.add_argument(
+        "parameter",
+        nargs='?',
+        default="",
+        help="command parameter"
+    )
 
     args = parser.parse_args()
 
