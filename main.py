@@ -3,6 +3,7 @@ import os
 import signal
 import subprocess
 import threading
+import pafy
 
 from telegram import ParseMode
 from telegram.ext import (Updater, CommandHandler, Defaults)
@@ -46,6 +47,19 @@ def main():
 def clear(update, context):
     context.bot_data['song_queue'] = context.bot_data['song_queue'][:1]
     update.message.reply_text("Queue cleared.")
+
+
+def playlist(url, update, context):
+    songs, count = pafy.get_playlist(url), 0
+    for song in songs['items']:
+        try:
+            song_url = song['pafy'].getbestaudio().url
+            song_title = song['pafy'].title
+            context.bot_data['song_queue'].append((song_url, song_title))
+            count += 1
+        except OSError:
+            pass
+    update.message.reply_text(f"{count} songs added to queue.")
 
 
 def song_queue(update, context):
@@ -97,19 +111,23 @@ def play(update, context):
             "*Example:* `/play Silvertown Blues`"
         )
     else:
-        song_url, song_title = search(song)
-        context.bot_data['song_queue'].append((song_url, song_title))
-        message.reply_text(f"Adding *{song_title}* to queue...")
-
-        if not context.bot_data['now_playing']:
+        if 'playlist?list=' in song:
+            playlist(song, update, context)
             threading.Thread(song_queue(update, context))
+        else:
+            song_url, song_title = search(song)
+            context.bot_data['song_queue'].append((song_url, song_title))
+            message.reply_text(f"Adding *{song_title}* to queue...")
+
+            if not context.bot_data['now_playing']:
+                threading.Thread(song_queue(update, context))
 
 
 def queue(update, context):
     if context.bot_data['song_queue']:
         song_list = context.bot_data['song_queue']
 
-        text = "Current Queue:\n\n"
+        text = "*Current Queue:*\n\n"
         for i, song in enumerate(song_list[:10]):
             text += str(i + 1) + ". " + song[1] + "\n"
         if len(song_list) > 10:
