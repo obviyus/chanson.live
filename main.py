@@ -6,8 +6,8 @@ import threading
 import pafy
 import spotipy
 
-from telegram import ParseMode
-from telegram.ext import (Updater, CommandHandler, Defaults)
+from telegram import ParseMode, MessageEntity
+from telegram.ext import Updater, CommandHandler, Defaults
 
 from media import search
 
@@ -33,6 +33,7 @@ def main():
 
     dispatcher = updater.dispatcher
     dispatcher.add_handler(CommandHandler('play', play, run_async=True))
+    dispatcher.add_handler(CommandHandler('playnext', play, run_async=True))
     dispatcher.add_handler(CommandHandler('skip', skip, run_async=True))
     dispatcher.add_handler(CommandHandler('status', status, run_async=True))
     dispatcher.add_handler(CommandHandler('q', queue, run_async=True))
@@ -54,27 +55,36 @@ def clear(update, context):
 
 
 def yt_playlist(url, update, context):
-    songs, count = pafy.get_playlist(url), 0
+    songs = pafy.get_playlist(url)
+    count = 0
+    add_list = []
+
     for song in songs['items']:
         try:
             song_url = song['pafy'].getbestaudio().url
             song_title = song['pafy'].title
-            context.bot_data['song_queue'].append((song_url, song_title))
+            add_list.append((song_url, song_title))
             count += 1
         except OSError:
             pass
+
     update.message.reply_text(f"{count} songs added to queue.")
+    return add_list
 
 
 def spotify_playlist(url, update, context):
     playlist = spotify.playlist(url)['tracks']['items']
     count = 0
+    add_list = []
+
     for track in playlist:
         query = track['track']['name'] + ' '.join([artist['name'] for artist in track['track']['artists']])
         song_url, song_title = search(query)
-        context.bot_data['song_queue'].append((song_url, song_title))
+        add_list.append((song_url, song_title))
         count += 1
+
     update.message.reply_text(f"{count} songs added to queue.")
+    return add_list
 
 
 def song_queue(update, context):
@@ -119,6 +129,8 @@ def skip(update, context):
 def play(update, context):
     message = update.message
     song = ' '.join(context.args)
+    cmd = list(message.parse_entities([MessageEntity.BOT_COMMAND]).values())[0]
+    append = True if cmd == '/play' else False
 
     if not song:
         message.reply_text(
@@ -127,23 +139,26 @@ def play(update, context):
         )
     else:
         if 'playlist?list=' in song:
-            yt_playlist(song, update, context)
+            add_list = yt_playlist(song, update, context)
         else:
             try:
-                spotify_playlist(song, update, context)
+                add_list = spotify_playlist(song, update, context)
             except spotipy.SpotifyException:
                 try:
                     track = spotify.track(song)
                     query = track['name'] + ' '.join([artist['name'] for artist in track['artists']])
-
                     song_url, song_title = search(query)
-                    context.bot_data['song_queue'].append((song_url, song_title))
+                    add_list = [(song_url, song_title)]
                     message.reply_text(f"Adding *{song_title}* to queue...")
-
                 except spotipy.SpotifyException:
                     song_url, song_title = search(song)
-                    context.bot_data['song_queue'].append((song_url, song_title))
+                    add_list = [(song_url, song_title)]
                     message.reply_text(f"Adding *{song_title}* to queue...")
+
+        if append:
+            context.bot_data['song_queue'].extend(add_list)
+        else:
+            context.bot_data['song_queue'][1:1] = add_list
 
         if not context.bot_data['now_playing']:
             threading.Thread(song_queue(update, context))
