@@ -10,4 +10,4 @@ COPY nginx.conf /etc/nginx/nginx.conf
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 
-CMD ["nginx"]
+CMD ["nginx", "-g", "daemon off;"]
