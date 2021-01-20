@@ -4,11 +4,15 @@ import signal
 import subprocess
 import threading
 import pafy
+import spotipy
 
 from telegram import ParseMode
 from telegram.ext import (Updater, CommandHandler, Defaults)
 
 from media import search
+
+
+spotify = spotipy.Spotify(auth_manager=spotipy.SpotifyClientCredentials())
 
 
 def start(update, context):
@@ -49,7 +53,7 @@ def clear(update, context):
     update.message.reply_text("Queue cleared.")
 
 
-def playlist(url, update, context):
+def yt_playlist(url, update, context):
     songs, count = pafy.get_playlist(url), 0
     for song in songs['items']:
         try:
@@ -59,6 +63,17 @@ def playlist(url, update, context):
             count += 1
         except OSError:
             pass
+    update.message.reply_text(f"{count} songs added to queue.")
+
+
+def spotify_playlist(url, update, context):
+    playlist = spotify.playlist(url)['tracks']['items']
+    count = 0
+    for track in playlist:
+        query = track['track']['name'] + ' '.join([artist['name'] for artist in track['track']['artists']])
+        song_url, song_title = search(query)
+        context.bot_data['song_queue'].append((song_url, song_title))
+        count += 1
     update.message.reply_text(f"{count} songs added to queue.")
 
 
@@ -112,11 +127,23 @@ def play(update, context):
         )
     else:
         if 'playlist?list=' in song:
-            playlist(song, update, context)
+            yt_playlist(song, update, context)
         else:
-            song_url, song_title = search(song)
-            context.bot_data['song_queue'].append((song_url, song_title))
-            message.reply_text(f"Adding *{song_title}* to queue...")
+            try:
+                spotify_playlist(song, update, context)
+            except spotipy.SpotifyException:
+                try:
+                    track = spotify.track(song)
+                    query = track['name'] + ' '.join([artist['name'] for artist in track['artists']])
+
+                    song_url, song_title = search(query)
+                    context.bot_data['song_queue'].append((song_url, song_title))
+                    message.reply_text(f"Adding *{song_title}* to queue...")
+
+                except spotipy.SpotifyException:
+                    song_url, song_title = search(song)
+                    context.bot_data['song_queue'].append((song_url, song_title))
+                    message.reply_text(f"Adding *{song_title}* to queue...")
 
         if not context.bot_data['now_playing']:
             threading.Thread(song_queue(update, context))
