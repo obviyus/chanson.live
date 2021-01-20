@@ -113,14 +113,13 @@ def play(update, context):
     else:
         if 'playlist?list=' in song:
             playlist(song, update, context)
-            threading.Thread(song_queue(update, context))
         else:
             song_url, song_title = search(song)
             context.bot_data['song_queue'].append((song_url, song_title))
             message.reply_text(f"Adding *{song_title}* to queue...")
 
-            if not context.bot_data['now_playing']:
-                threading.Thread(song_queue(update, context))
+        if not context.bot_data['now_playing']:
+            threading.Thread(song_queue(update, context))
 
 
 def queue(update, context):
