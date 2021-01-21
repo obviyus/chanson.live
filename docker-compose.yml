@@ -22,11 +22,11 @@ services:
       - ./radio:/radio
       - ./hls:/hls
 
-  nginx:
+  nginx-hls:
     build:
       context: nginxhls
       dockerfile: Dockerfile
-    container_name: nginx
+    container_name: nginx-hls
     restart: unless-stopped
     networks:
       - default

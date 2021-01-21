@@ -25,7 +25,7 @@ set("frame.audio.channels",2)
 set("audio.converter.samplerate.libsamplerate.quality","fast")
 
 ### Clocks settings
-set("root.max_latency",5.)
+set("root.max_latency",3.)
 set("clock.allow_streaming_errors",false)
 
 ### Retrieve configuration from environment
@@ -141,57 +141,9 @@ live = switch(id="switch_live",
               [(is_playing("srt1"), srt1),
               (is_playing("srt2"), srt2)])
 
-# live = crossfade(live, smart=true)
-
-
-### WIP, transitions not finished yet
-## Transisitions 
-# A simple (long) cross-fade
-# Use metadata override to make sure transition is long enough.
-def crossfade(a,b)
-  def add_transition_length(_) =
-    [("liq_transition_length","15.")]
-  end
-
-  transition =
-    add(normalize=false,
-          [ sequence([ blank(duration=5.),
-                       fade.in(duration=10.,b) ]),
-            fade.out(duration=10.,a) ])
-end
-
-# # Partially apply next to give it a jingle source.
-# # It will fade out the old source, then play the jingle.
-# # At the same time it fades in the new source.
-# # Use metadata override to make sure transition is long enough.
-# def next(j,a,b)
-#   # This assumes that the jingle is 6 seconds long
-#   def add_transition_length(_) =
-#     [("liq_transition_length","15.")]
-#   end
-
-#   transition =
-#     add(normalize=false,
-#       [ sequence(merge=true,
-#                  [ blank(duration=3.),
-#                    fade.in(duration=6.,b) ]),
-#         sequence([fade.out(duration=9.,a),
-#                   j,blank()]) ])
-# end
-
-# # A transition, which does a cross-fading from A to B
-# # No need to override duration as default value (5 seconds)
-# # is over crossade duration (3 seconds)
-# def transition(a,b)
-#   add(normalize=false,
-#       [ fade.in(duration=3.,b),
-#         fade.out(duration=3.,a) ])
-# end
-
 radio_prod = fallback(id="fallback_prod",
                              track_sensitive=false,
-                            #  transitions=[ crossfade, transition() ],
-                             [live, srt1, srt2, safe_blank])
+                             [live, blank(duration=2.0), srt1, srt2, safe_blank])
 
 ### Get metrics on output
 latency_metric(label_values=["default","output","radio_prod"],radio_prod)
@@ -323,18 +275,6 @@ harbor.http.register(port=8081,method="GET","^/",httphandler)
 
 ### Outputs
 ### Define outputs formats
-aac_lofi =
-  %ffmpeg(
-    format="mpegts",
-    %audio(
-      channels=2,
-      samplerate=44100,
-      codec="aac",
-      b="32k",
-      profile="aac_low"
-    )
-  )
-
 aac_midfi =
   %ffmpeg(
     format="mpegts",
@@ -375,14 +315,11 @@ end
 output.file.hls(id="output_hls",
                 playlist="live.m3u8",
                 segment_duration=2.0,
-                segments=5,
-                segments_overhead=5,
                 segment_name=segment_name,
                 on_file_change=on_file_change,
                 persist_at="state.config",
                 !hlspath,
-                [("aac_lofi",aac_lofi),
-                 ("aac_midfi", aac_midfi),
+                [("aac_midfi", aac_midfi),
                  ("aac_hifi", aac_hifi)],
                 radio_prod)
 ### END Outputs

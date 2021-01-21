@@ -132,3 +132,4 @@ dmypy.json
 *.ts
 *.m3u8
 hls/
+.idea/
