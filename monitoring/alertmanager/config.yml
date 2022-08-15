@@ -1,5 +1,0 @@
-route:
-  receiver: 'nullreceiver'
-
-receivers:
-- name: nullreceiver
