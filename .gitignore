@@ -143,3 +143,6 @@ dist
 
 # Build files
 build/
+
+# IDE
+.idea/
