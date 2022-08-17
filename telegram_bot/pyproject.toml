@@ -5,10 +5,12 @@ description = ""
 authors = ["Ayaan Zaidi <hi@obviy.us>"]
 
 [tool.poetry.dependencies]
-python = "^3.10"
-python-telegram-bot = "^13.13"
+python = ">=3.10,<3.11"
 yt-dlp = "^2022.8.14"
 requests = "^2.28.1"
+spotdl = { version = "4.0.0-rc.2", allow-prereleases = true }
+spotipy = "^2.20.0"
+python-telegram-bot = "^13.13"
 
 [tool.poetry.dev-dependencies]
 
