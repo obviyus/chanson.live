@@ -41,20 +41,21 @@ def music_search(query: str, message: Message = None) -> (Song, Path) or None:
         if song.duration > 600:
             return None
 
-        cursor.execute(
-            """
-            INSERT INTO song_log (song_id, display_name, user_id)
-            VALUES (?, ?, ?)
-            """,
-            (song.song_id, song.display_name, message.from_user.id),
-        )
+        if message:
+            cursor.execute(
+                """
+                INSERT INTO song_log (song_id, display_name, user_id)
+                VALUES (?, ?, ?)
+                """,
+                (song.song_id, song.display_name, message.from_user.id),
+            )
 
-        cursor.execute(
-            """
-            INSERT INTO song_stats (song_id, display_name) VALUES (?, ?)
-            ON CONFLICT (song_id) DO UPDATE SET play_count = play_count + 1;
-            """,
-            (song.song_id, song.display_name)
-        )
+            cursor.execute(
+                """
+                INSERT INTO song_stats (song_id, display_name) VALUES (?, ?)
+                ON CONFLICT (song_id) DO UPDATE SET play_count = play_count + 1;
+                """,
+                (song.song_id, song.display_name)
+            )
 
         return song, f"{song.song_id}.opus"
