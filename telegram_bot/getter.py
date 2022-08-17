@@ -23,11 +23,13 @@ def music_search(query: str, message: Message = None) -> (Song, Path) or None:
 
     if song_list:
         cursor = sqlite_conn.cursor()
-        message.reply_text(
-            f"Adding <b>{song_list[0].display_name}</b> by <b>{song_list[0].artist}</b> to the queue."
-            f"<a href='{song_list[0].cover_url}'>&#8205;</a>",
-            parse_mode=ParseMode.HTML,
-        )
+
+        if message:
+            message.reply_text(
+                f"Adding <b>{song_list[0].display_name}</b> by <b>{song_list[0].artist}</b> to the queue."
+                f"<a href='{song_list[0].cover_url}'>&#8205;</a>",
+                parse_mode=ParseMode.HTML,
+            )
 
         if Path(f"{song_list[0].song_id}.opus").exists():
             return song_list[0], f"{song_list[0].song_id}.opus"
