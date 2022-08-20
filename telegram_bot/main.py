@@ -1,15 +1,12 @@
 import os
 import signal
-import subprocess
 
-import requests
 import spotdl
-from telegram import Message, ParseMode, Update
-from telegram.ext import CommandHandler, ContextTypes, Updater
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, ParseMode, Update
+from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, ContextTypes, Updater
 
 import config
-from db import sqlite_conn
-from getter import music_search
+from player import music_search, playlist_search, queue_player
 
 
 def start(update: Update, _: ContextTypes):
@@ -26,12 +23,14 @@ def main():
 
     dispatcher = updater.dispatcher
     dispatcher.add_handler(CommandHandler('play', play, run_async=True))
+    dispatcher.add_handler(CommandHandler('playlist', playlist, run_async=True))
     dispatcher.add_handler(CommandHandler('skip', skip, run_async=True))
     dispatcher.add_handler(CommandHandler('status', status, run_async=True))
     dispatcher.add_handler(CommandHandler('q', queue, run_async=True))
     dispatcher.add_handler(CommandHandler('clear', clear, run_async=True))
+    dispatcher.add_handler(CallbackQueryHandler(callback=remove_queue_callback_handler, run_async=True))
 
-    dispatcher.bot_data['now_playing'] = ''
+    dispatcher.bot_data['now_playing'] = None
     dispatcher.bot_data['song_queue'] = []
     dispatcher.bot_data['PID'] = None
 
@@ -45,69 +44,6 @@ def main():
 def clear(update, context):
     context.bot_data["song_queue"] = context.bot_data["song_queue"][:1]
     update.message.reply_text("Queue cleared.")
-
-
-def queue_player(context: ContextTypes):
-    while len(context.bot_data["song_queue"]) > 0:
-        print(context.bot_data["song_queue"][0])
-        song, path, message = context.bot_data["song_queue"][0]
-        song: spotdl.Song
-
-        if message:
-            message.reply_text(
-                f"Playing <b>{song.display_name}</b> by <b>{song.artist}</b>."
-                f"<a href='{song.cover_url}'>&#8205;</a>",
-                parse_mode=ParseMode.HTML,
-            )
-
-        context.bot_data["now_playing"] = song.display_name
-
-        response = requests.get("http://127.0.0.1:8081/startProducer").json()
-        p = subprocess.Popen(
-            [
-                "ffmpeg",
-                "-re",
-                "-v",
-                "info",
-                "-i",
-                f"{path}",
-                "-map",
-                "0:a:0",
-                "-acodec",
-                "libopus",
-                "-ab",
-                "128k",
-                "-ac",
-                "2",
-                "-ar",
-                "48000",
-                "-f",
-                "tee",
-                f"[select=a:f=rtp:ssrc=11111111:payload_type=101]rtp://127.0.0.1:{response['rtpPort']}?rtcpport={response['rtcpPort']}",
-            ]
-        )
-
-        context.bot_data["PID"] = p.pid
-
-        p.wait()
-
-        requests.get("http://127.0.0.1:8081/stopProducer")
-        context.bot_data["now_playing"] = None
-        context.bot_data["song_queue"].pop(0)
-
-        # Backup to play downloaded songs if queue is empty
-        if len(context.bot_data["song_queue"]) == 0:
-            cursor = sqlite_conn.cursor()
-            cursor.execute(
-                """
-                SELECT * FROM song_stats ORDER BY RANDOM() LIMIT 1;
-                """
-            )
-
-            song, path = music_search(cursor.fetchone()['display_name'])
-            context.bot_data["song_queue"] = [
-                (song, path, None)
-            ]
 
 
 def skip(update, context):
@@ -144,35 +80,89 @@ def play(update, context):
             queue_player(context)
 
 
-def queue(update, context):
+def playlist(update, context):
+    query = " ".join(context.args)
+
+    if not query:
+        update.message.reply_text(
+            "*Usage:* `/playlist {PLAYLIST_NAME}`\n" "*Example:* `/playlist Silvertown Blues`"
+        )
+        return
+
+    playlist_search(query, context, update.message)
+
+
+def queue_keyboard_builder(song_list):
+    keyboard = []
+
+    for i, (song, path, message) in enumerate(song_list[:5]):
+        song: spotdl.Song
+        message: Message
+
+        keyboard.append(
+            [
+                InlineKeyboardButton(
+                    song.display_name,
+                    callback_data=f"""skip_id:{song.song_id}""",
+                )
+            ]
+        )
+
+    if len(song_list) > 10:
+        keyboard.append(
+            [
+                InlineKeyboardButton(
+                    f"... and {len(song_list) - 10} more",
+                    callback_data="",
+                )
+            ]
+        )
+
+    return InlineKeyboardMarkup(keyboard)
+
+
+def queue(update, context: CallbackContext):
     if len(context.bot_data["song_queue"]) > 0:
         song_list = context.bot_data["song_queue"]
 
-        text = "<b>Current Queue:</b>\n\n"
-
-        for i, (song, path, message) in enumerate(song_list[:10]):
-            song: spotdl.Song
-            message: Message
-
-            text += f"{i + 1}. <b>{song.display_name}</b> queued by {message.from_user.first_name}\n"
-
-        if len(song_list) > 10:
-            text += "..."
-
         update.message.reply_text(
-            text,
-            parse_mode=ParseMode.HTML
+            f"{len(song_list)} songs in queue. Tap on a song to remove it:",
+            reply_markup=queue_keyboard_builder(song_list),
         )
     else:
         update.message.reply_text("No songs in queue.")
 
 
+def remove_queue_callback_handler(update, context):
+    query_data = update.callback_query.data.replace("skip_id:", "")
+    if not query_data:
+        return
+
+    song_id = query_data
+    context.bot_data["song_queue"] = filter(
+        lambda x: x[0].song_id != song_id, context.bot_data["song_queue"]
+    )
+
+    update.callback_query.answer(
+        text="Removed from queue.", show_alert=True
+    )
+
+    update.callback_query.edit_message_text(
+        text=f"{len(context.bot_data['song_queue'])} songs in queue.",
+        reply_markup=queue_keyboard_builder(context.bot_data["song_queue"]),
+    )
+
+
 def status(update, context):
-    song_title = context.bot_data["now_playing"]
-    if song_title:
-        update.message.reply_text(f"Streaming *{song_title}*...")
+    song = context.bot_data["now_playing"]
+    if song:
+        update.message.reply_text(
+            f"Playing <b>{song.display_name}</b> by <b>{song.artist}</b>."
+            f"<a href='{song.cover_url}'>&#8205;</a>",
+            parse_mode=ParseMode.HTML,
+        )
     else:
-        update.message.reply_text("No songs being played by humans 🤖")
+        update.message.reply_text("No songs being played 🤖")
 
 
 if __name__ == "__main__":
