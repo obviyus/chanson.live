@@ -8,10 +8,17 @@ export const meta: MetaFunction = () => ({
     charset: "utf-8",
     title: "Mach Radio",
     viewport: "width=device-width,initial-scale=1",
+    keywords: "radio,webrtc,mediasoup,remix,react,typescript",
     description: "A WebRTC radio station.",
+    url: "https://radio.superserio.us",
+    type: "website",
+    "twitter:image": Logo,
+    "twitter:card": "summary_large_image",
     "og:image": Logo,
     "og:title": "Mach Radio",
     "og:description": "A WebRTC radio station.",
+    "og:url": "https://radio.superserio.us",
+    "og:site_name": "Mach Radio",
 });
 
 export const links: LinksFunction = () => {
