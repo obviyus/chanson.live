@@ -1,7 +1,7 @@
 {
   "name": "mach",
   "version": "1.0.0",
-  "description": "Mach Radio, made using Remix + React.",
+  "description": "A WebRTC radio, made using Remix + React.",
   "main": "server.js",
   "repository": "git@github.com:obviyus/mach.git",
   "author": "Ayaan Zaidi <hi@obviy.us>",

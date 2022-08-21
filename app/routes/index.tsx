@@ -234,7 +234,7 @@ export default function Index() {
                  className={ 'w-32 h-32 mb-4 rounded-xl' }/>
 
             <h1
-                className={ 'text-center text-2xl font-bold' }>Mach Radio 📻
+                className={ 'text-center text-2xl font-bold' }>Localhost FM 📻
             </h1>
 
             <p>
