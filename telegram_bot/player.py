@@ -7,7 +7,7 @@ from pathlib import Path
 import requests
 from spotdl import Song, Spotdl
 from telegram import Message, ParseMode
-from telegram.ext import ContextTypes
+from telegram.ext import CallbackContext
 
 import config
 from db import sqlite_conn
@@ -21,7 +21,24 @@ spotdl = Spotdl(
 )
 
 
-def queue_player(context: ContextTypes):
+def backup_stream(context: CallbackContext):
+    cursor = sqlite_conn.cursor()
+    cursor.execute(
+        """
+        SELECT * FROM song_stats ORDER BY RANDOM() LIMIT 1;
+        """
+    )
+
+    song, path = music_search(cursor.fetchone()['display_name'])
+    context.bot_data["song_queue"] = [
+        (song, path, None)
+    ]
+
+
+def queue_player(context: CallbackContext):
+    if len(context.bot_data["song_queue"]) == 0:
+        backup_stream(context)
+
     while len(context.bot_data["song_queue"]) > 0:
         print(context.bot_data["song_queue"][0])
 
@@ -37,7 +54,16 @@ def queue_player(context: ContextTypes):
 
         context.bot_data["now_playing"] = song
 
-        response = requests.get("http://127.0.0.1:8081/startProducer").json()
+        response = requests.post(
+            "http://127.0.0.1:8081/startProducer",
+            data={
+                "title": song.name,
+                "artist": song.artist,
+                "album": song.album_name,
+                "cover": song.cover_url,
+            }
+        ).json()
+
         p = subprocess.Popen(
             [
                 "ffmpeg",
@@ -72,17 +98,7 @@ def queue_player(context: ContextTypes):
 
         # Backup to play downloaded songs if queue is empty
         if len(context.bot_data["song_queue"]) == 0:
-            cursor = sqlite_conn.cursor()
-            cursor.execute(
-                """
-                SELECT * FROM song_stats ORDER BY RANDOM() LIMIT 1;
-                """
-            )
-
-            song, path = music_search(cursor.fetchone()['display_name'])
-            context.bot_data["song_queue"] = [
-                (song, path, None)
-            ]
+            backup_stream(context)
 
 
 @lru_cache(maxsize=None)

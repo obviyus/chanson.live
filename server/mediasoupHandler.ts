@@ -9,7 +9,8 @@ import type {
     WebRtcTransport,
     Worker
 } from "mediasoup/node/lib/types";
-import { io } from "./index";
+import {io} from "./index";
+import {SongMetadata} from "./commandServer";
 
 const mediasoup = require("mediasoup");
 
@@ -69,16 +70,17 @@ export class MediasoupWorker {
     producerTransport: PlainTransport;
     transports: Record<string, Transport> = {};
     consumers: Record<string, Consumer> = {};
+    currentSongMetadata: SongMetadata;
 
     constructor() {
         const start = async () => {
             this.worker = await mediasoup.createWorker();
-            this.router = await this.worker.createRouter({ mediaCodecs: mediasoupOptions.router.mediaCodecs });
+            this.router = await this.worker.createRouter({mediaCodecs: mediasoupOptions.router.mediaCodecs});
         }
 
         start().then(() => {
-            console.log(`Worker stared: ${ this.worker.pid }`);
-            console.log(`Router started: ${ this.router.id }`);
+            console.log(`Worker stared: ${this.worker.pid}`);
+            console.log(`Router started: ${this.router.id}`);
         });
     }
 
@@ -103,7 +105,7 @@ export class MediasoupWorker {
                                     parameters: {}
                                 }
                             ],
-                        encodings: [{ ssrc: 11111111 }]
+                        encodings: [{ssrc: 11111111}]
                     }
             });
 
@@ -116,13 +118,21 @@ export class MediasoupWorker {
     }
 
     /**
+     * Broadcast music metadata to all connected clients.
+     */
+    public broadcastMetadata(metadata: SongMetadata): void {
+        this.currentSongMetadata = metadata;
+        io.sockets.emit('metadata', metadata);
+    }
+
+    /**
      * WebRTC transports to all connected clients.
      * @param socketID
      */
     public async createWebRTCTransport(socketID: string): Promise<WebRtcTransport> {
         // @ts-ignore
         const transport = await this.router.createWebRtcTransport(mediasoupOptions.webRtcTransport);
-        console.log(`new transport created: ${ transport.id }`);
+        console.log(`new transport created: ${transport.id}`);
 
         this.transports[socketID] = transport;
         return transport;
@@ -138,7 +148,7 @@ export class MediasoupWorker {
             comedia: true,
         });
 
-        console.log(`NEW_PLAIN_RTP_TRANSPORT: ${ transport.id }`);
+        console.log(`NEW_PLAIN_RTP_TRANSPORT: ${transport.id}`);
 
         this.producerTransport = transport;
         return transport;
@@ -156,7 +166,7 @@ export class MediasoupWorker {
         });
 
         if (!canConsume) {
-            console.error(`CANNOT_CONSUME: ${ this.producer.id } WITH ${ rtpCapabilities }`);
+            console.error(`CANNOT_CONSUME: ${this.producer.id} WITH ${rtpCapabilities}`);
             return null;
         }
 
@@ -166,7 +176,7 @@ export class MediasoupWorker {
             paused: false,
         });
 
-        console.log(`ADDED_CONSUMER: ${ consumer.id }`);
+        console.log(`ADDED_CONSUMER: ${consumer.id}`);
 
         this.consumers[consumer.id] = consumer;
         return consumer;

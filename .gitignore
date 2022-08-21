@@ -143,6 +143,11 @@ dist
 
 # Build files
 build/
+*.opus
+*.mp3
+*.pyc
+*.db
+./app/styles/app.css
 
 # IDE
 .idea/

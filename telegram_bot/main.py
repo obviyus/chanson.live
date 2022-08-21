@@ -1,15 +1,17 @@
+import logging
 import os
 import signal
+from datetime import time
 
 import spotdl
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, ParseMode, Update
-from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, ContextTypes, Updater
+from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, Updater
 
 import config
 from player import music_search, playlist_search, queue_player
 
 
-def start(update: Update, _: ContextTypes):
+def start(update: Update, _: CallbackContext):
     """
     Start command handler.
     """
@@ -28,6 +30,7 @@ def main():
     dispatcher.add_handler(CommandHandler('status', status, run_async=True))
     dispatcher.add_handler(CommandHandler('q', queue, run_async=True))
     dispatcher.add_handler(CommandHandler('clear', clear, run_async=True))
+    dispatcher.add_handler(CommandHandler('start', start, run_async=True))
     dispatcher.add_handler(CallbackQueryHandler(callback=remove_queue_callback_handler, run_async=True))
 
     dispatcher.bot_data['now_playing'] = None
@@ -36,7 +39,8 @@ def main():
 
     updater.start_polling(drop_pending_updates=True)
 
-    print("Started bot")
+    logging.info(f"Started @{dispatcher.bot.username} at {time()}")
+    updater.job_queue.run_once(queue_player, when=0)
 
     updater.idle()
 

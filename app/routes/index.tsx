@@ -1,8 +1,8 @@
-import React, { createRef, useEffect, useState } from "react";
-import type { Consumer } from "mediasoup-client/lib/Consumer";
-import type { Transport } from "mediasoup-client/lib/Transport";
-import { Device } from "mediasoup-client";
-import { socket } from "~/utils/socket";
+import React, {createRef, useEffect, useState} from "react";
+import type {Consumer} from "mediasoup-client/lib/Consumer";
+import type {Transport} from "mediasoup-client/lib/Transport";
+import {Device} from "mediasoup-client";
+import {socket} from "~/utils/socket";
 
 export default function Index() {
     /**
@@ -13,6 +13,8 @@ export default function Index() {
     const [consumer, setConsumer] = useState<Consumer>();
     const [device, setDevice] = useState<Device>();
     const [producerID, setProducerID] = useState<string | null>(null);
+    const [metadata, setMetadata] = useState<any>();
+    const [clientCount, setClientCount] = useState<number>(0);
 
     const audio = createRef<HTMLAudioElement>();
 
@@ -38,14 +40,14 @@ export default function Index() {
      */
     function createConsumer() {
         if (consumerTransport && device) {
-            console.log(`STARTING_CONSUMER_FOR_TRANSPORT: ${ consumerTransport.id }`);
-            const { rtpCapabilities } = device;
+            console.log(`STARTING_CONSUMER_FOR_TRANSPORT: ${consumerTransport.id}`);
+            const {rtpCapabilities} = device;
 
-            socketEmit("consume", { rtpCapabilities }).then((response: any) => {
+            socketEmit("consume", {rtpCapabilities}).then((response: any) => {
                 if (response === null) {
                     console.log("NO_PRODUCERS_AVAILABLE");
                 } else {
-                    console.log(`CONSUMING_PRODUCER: ${ response['producerId'] }`);
+                    console.log(`CONSUMING_PRODUCER: ${response['producerId']}`);
 
                     consumerTransport.consume({
                         producerId: response['producerId'],
@@ -67,7 +69,7 @@ export default function Index() {
     async function loadDevice(routerRtpCapabilities: any): Promise<Device> {
         try {
             const newDevice = new Device();
-            await newDevice.load({ routerRtpCapabilities });
+            await newDevice.load({routerRtpCapabilities});
 
             return newDevice;
         } catch (error: any) {
@@ -84,31 +86,36 @@ export default function Index() {
             console.log("SOCKET_CONNECTED");
         });
 
+        socket.on("clientCount", (message: Record<string, string>) => {
+            console.log(`CLIENT_COUNT: ${message['clientCount']}`);
+            setClientCount(parseInt(message['clientCount']));
+        });
+
         socket.on('error', function (err) {
-            console.log(`SOCKET_ERROR: ${ err }`);
+            console.log(`SOCKET_ERROR: ${err}`);
         });
 
         socket.on('disconnect', function (evt) {
-            console.log(`SOCKET_DISCONNECT: ${ evt }`);
+            console.log(`SOCKET_DISCONNECT: ${evt}`);
         });
 
         socket.on("message", (message: Record<string, string>) => {
             if (message['type'] === 'welcome') {
                 if (socket.id !== message['id']) {
-                    console.log(`SOCKET_WARN ID_MISMATCH: ${ message['id'] } != ${ socket.id }`);
+                    console.log(`SOCKET_WARN ID_MISMATCH: ${message['id']} != ${socket.id}`);
                 }
 
-                console.log(`SOCKET_WELCOME: ${ message['id'] }`);
+                console.log(`SOCKET_WELCOME: ${message['id']}`);
             }
         });
 
         socket.on("producerStarted", function (message: Record<string, string>) {
-            console.log(`SOCKET_NEW_PRODUCER_STARTED: ${ message['id'] }`);
+            console.log(`SOCKET_NEW_PRODUCER_STARTED: ${message['id']}`);
             setProducerID(message['id']);
         });
 
         socket.on("producerClosed", async function (message: Record<string, string>) {
-            console.log(`SOCKET_PRODUCER_CLOSED: ${ message['id'] }`);
+            console.log(`SOCKET_PRODUCER_CLOSED: ${message['id']}`);
             setProducerID(null);
 
             if (consumer) {
@@ -120,11 +127,16 @@ export default function Index() {
             }
         });
 
+        socket.on("metadata", (message: Record<string, string>) => {
+            console.log(`SOCKET_METADATA: ${message}`);
+            setMetadata(message);
+        });
+
         /**
          * Get Router RTP Capabilities.
          */
         socketEmit('getRouterRtpCapabilities', {}).then((routerRtpCapabilities: any) => {
-            console.log(`SOCKET_GET_ROUTER_RTP_CAPABILITIES: ${ routerRtpCapabilities }`);
+            console.log(`SOCKET_GET_ROUTER_RTP_CAPABILITIES: ${routerRtpCapabilities}`);
             loadDevice(routerRtpCapabilities).then((newDevice: Device) => {
                 setDevice(newDevice);
             });
@@ -146,7 +158,7 @@ export default function Index() {
     useEffect(() => {
         socketEmit('createConsumerTransport', {}).then((response: any) => {
             if (device) {
-                console.log(`DEVICE_LOADED: ${ device.loaded }`)
+                console.log(`DEVICE_LOADED: ${device.loaded}`)
                 setConsumerTransport(device.createRecvTransport(response));
             }
         });
@@ -157,10 +169,10 @@ export default function Index() {
      */
     useEffect(() => {
         if (consumerTransport) {
-            console.log(`CONSUMER_TRANSPORT_CREATED: ${ consumerTransport.id }`);
+            console.log(`CONSUMER_TRANSPORT_CREATED: ${consumerTransport.id}`);
 
-            consumerTransport.on('connect', async ({ dtlsParameters }, callback) => {
-                socketEmit('connectConsumerTransport', { dtlsParameters }).then(callback);
+            consumerTransport.on('connect', async ({dtlsParameters}, callback) => {
+                socketEmit('connectConsumerTransport', {dtlsParameters}).then(callback);
             });
 
             consumerTransport.on('connectionstatechange', (state) => {
@@ -188,13 +200,15 @@ export default function Index() {
      */
     useEffect(() => {
         if (consumer) {
-            console.log(`CONSUMER_CREATED: ${ consumer.id }`);
+            console.log(`CONSUMER_CREATED: ${consumer.id}`);
 
             const stream = new MediaStream();
             stream.addTrack(consumer.track);
 
             if (audio.current) {
                 audio.current.srcObject = stream;
+                audio.current.volume = 0.3;
+                audio.current.play();
             }
         }
     }, [consumer]);
@@ -204,23 +218,41 @@ export default function Index() {
      */
     useEffect(() => {
         if (producerID !== null) {
-            console.log(`PRODUCER_CREATED: ${ producerID }`);
-            console.log(`TRANSPORT: ${ consumerTransport?.id }`);
-            console.log(`DEVICE: ${ device?.loaded }`);
+            console.log(`PRODUCER_CREATED: ${producerID}`);
+            console.log(`TRANSPORT: ${consumerTransport?.id}`);
+            console.log(`DEVICE: ${device?.loaded}`);
             createConsumer();
         }
     }, [producerID]);
 
-
     return (
         <div
-            className={ 'flex mx-auto max-w-screen-sm p-2 items-center flex-col pb-16 pt-12 min-h-screen' }>
+            className={'flex mx-auto max-w-screen-sm p-2 items-center flex-col pb-16 pt-12 min-h-screen'}>
             <h1
-                className={ 'text-center text-2xl font-bold' }>Mach Radio</h1>
-            <audio ref={ audio }
-                   controls={ true }
+                className={'text-center text-2xl font-bold'}>Mach Radio
+            </h1>
+
+            <p>
+                {clientCount} listener(s)
+            </p>
+
+            <img src={metadata && metadata.cover}
+                 alt={metadata && metadata.title}
+                 className={'max-w-sm aspect-square pt-10 px-5'}
+            />
+
+            <h2 className={'pt-10 text-center font-bold tracking-wide'}>
+                {metadata && metadata.title} - {metadata && metadata.artist}
+            </h2>
+
+            <p className={'pt-2'}>
+                {metadata && metadata.album}
+            </p>
+
+            <audio ref={audio}
+                   controls={true}
                    autoPlay
-                   className={ 'mt-10' }
+                   className={'mt-10'}
             />
         </div>
     );
