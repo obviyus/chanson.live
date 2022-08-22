@@ -21,7 +21,7 @@
     "generate:css": "tailwindcss -i ./styles/app.css -o app/styles/app.css",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
     "format": "prettier --write .",
-    "start": "cross-env NODE_ENV=production ts-node server/index.ts"
+    "start": "cross-env NODE_ENV=production ts-node --transpile-only server/index.ts"
   },
   "dependencies": {
     "@remix-run/express": "^1.6.8",
@@ -34,7 +34,6 @@
     "mediasoup-client": "^3.6.56",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "remix-utils": "^3.3.0",
     "socket.io": "^4.5.1",
     "socket.io-client": "^4.5.1"
   },

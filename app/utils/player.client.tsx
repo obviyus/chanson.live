@@ -6,7 +6,7 @@ import { socket } from "~/utils/socket";
 import Logo from "../../public/logo.png";
 import { SongMetadata } from "../../server/commandServer";
 
-export default function Player() {
+export default function ClientPlayer() {
     /**
      * Each property we need gets its own state variable.
      * TODO: Improve state management (maybe Redux?).
@@ -244,7 +244,7 @@ export default function Player() {
                 metadata && metadata.cover && metadata.title && (
                     <img src={ metadata.cover }
                          alt={ metadata.title }
-                         className={ 'max-w-sm aspect-square pt-10 px-5' }
+                         className={ 'max-w-sm mt-10 mx-5 drop-shadow-xl' }
                     />
                 )
             }

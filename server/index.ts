@@ -63,9 +63,6 @@ commandServer.listen(COMMAND_SERVER_PORT, '127.0.0.1', () => {
 setInterval(() => {
     if (defaultWorker.producer && !defaultWorker.producer.closed) {
         defaultWorker.producer.getStats().then(async stats => {
-            // FIXME: Use a dedicated logger.
-            console.log(stats);
-
             /**
              * Close producer if RTP score is 0. This is just a fallback mechanism if the
              * ffmpeg process fails to exit gracefully.
