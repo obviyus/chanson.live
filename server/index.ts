@@ -49,7 +49,7 @@ app.all(
 const EXPRESS_PORT = parseInt(process.env.PORT ?? "8080");
 
 index.listen(EXPRESS_PORT, '0.0.0.0', () => {
-    console.log(`Express and Socket server listening on :${EXPRESS_PORT}`);
+    console.log(`Express and Socket server listening on :${ EXPRESS_PORT }`);
 });
 
 /**
@@ -57,7 +57,7 @@ index.listen(EXPRESS_PORT, '0.0.0.0', () => {
  */
 const COMMAND_SERVER_PORT = parseInt(process.env.COMMAND_SERVER_PORT ?? '8081');
 commandServer.listen(COMMAND_SERVER_PORT, '127.0.0.1', () => {
-    console.log(`COMMAND_SERVER started on port :${COMMAND_SERVER_PORT}`);
+    console.log(`COMMAND_SERVER started on port :${ COMMAND_SERVER_PORT }`);
 });
 
 setInterval(() => {
