@@ -1,4 +1,4 @@
-import ClientPlayer from "~/utils/player.client";
+import ClientPlayer from "~/utils/player";
 
 export default function Index() {
     return (
