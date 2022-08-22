@@ -21,7 +21,7 @@
     "generate:css": "tailwindcss -i ./styles/app.css -o app/styles/app.css",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
     "format": "prettier --write .",
-    "start": "cross-env NODE_ENV=production node build/index.mjs"
+    "start": "cross-env NODE_ENV=production ts-node server/index.ts"
   },
   "dependencies": {
     "@remix-run/express": "^1.6.8",
