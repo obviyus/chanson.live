@@ -1,9 +1,9 @@
 {
-  "name": "mach",
+  "name": "localhost_fm",
   "version": "1.0.0",
   "description": "A WebRTC radio, made using Remix + React.",
-  "main": "server.js",
-  "repository": "git@github.com:obviyus/mach.git",
+  "main": "server/index.ts",
+  "repository": "git@github.com:obviyus/radio.git",
   "author": "Ayaan Zaidi <hi@obviy.us>",
   "license": "MIT",
   "private": true,
@@ -12,7 +12,7 @@
     "build": "run-s build:*",
     "build:css": "yarn run generate:css --minify",
     "build:remix": "remix build",
-    "build:server": "esbuild --platform=node --bundle --format=cjs ./server/index.ts --outdir=build",
+    "build:server": "node build.mjs",
     "dev": "run-p dev:*",
     "dev:server": "cross-env NODE_ENV=development ts-node ./server/index.ts",
     "dev:build": "cross-env NODE_ENV=development yarn run build:server --watch",
@@ -21,7 +21,7 @@
     "generate:css": "tailwindcss -i ./styles/app.css -o app/styles/app.css",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
     "format": "prettier --write .",
-    "start": "cross-env NODE_ENV=production ts-node --transpile-only ./server/index.ts"
+    "start": "cross-env NODE_ENV=production node build/index.mjs"
   },
   "dependencies": {
     "@remix-run/express": "^1.6.8",
@@ -31,9 +31,10 @@
     "cross-env": "^7.0.3",
     "express": "^4.18.1",
     "mediasoup": "^3.10.5",
-    "mediasoup-client": "^3.6.55",
+    "mediasoup-client": "^3.6.56",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "remix-utils": "^3.3.0",
     "socket.io": "^4.5.1",
     "socket.io-client": "^4.5.1"
   },
@@ -41,11 +42,11 @@
     "@remix-run/dev": "^1.6.8",
     "@remix-run/eslint-config": "^1.6.8",
     "@types/compression": "^1.7.2",
-    "@types/node": "^18.7.4",
+    "@types/node": "^18.7.9",
     "@types/react": "^18.0.15",
     "@types/react-dom": "^18.0.6",
     "autoprefixer": "^10.4.8",
-    "esbuild": "^0.15.3",
+    "esbuild": "^0.15.5",
     "eslint": "^8.20.0",
     "nodemon": "^2.0.19",
     "npm-run-all": "^4.1.5",
@@ -55,6 +56,6 @@
     "typescript": "^4.7.4"
   },
   "engines": {
-    "node": ">=14"
+    "node": ">=16"
   }
 }
