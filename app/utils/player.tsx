@@ -3,8 +3,8 @@ import { Transport } from "mediasoup-client/lib/Transport";
 import { Consumer } from "mediasoup-client/lib/Consumer";
 import { Device } from "mediasoup-client";
 import { socket } from "~/utils/socket";
-import Logo from "../../public/logo.png";
 import { SongMetadata } from "../../server/commandServer";
+import { BsGithub, BsHeartFill } from "react-icons/bs";
 
 export default function ClientPlayer() {
     /**
@@ -228,10 +228,6 @@ export default function ClientPlayer() {
         <div
             className={ 'flex mx-auto max-w-screen-sm p-2 items-center flex-col pb-16 pt-12 min-h-screen' }>
 
-            <img src={ Logo }
-                 alt={ 'logo' }
-                 className={ 'w-32 h-32 mb-4 rounded-xl' }/>
-
             <h1
                 className={ 'text-center text-2xl font-bold' }>Localhost FM 📻
             </h1>
@@ -267,6 +263,20 @@ export default function ClientPlayer() {
                    preload={ 'auto' }
                    className={ 'mt-10' }
             />
+
+            <a href={ "https://obviy.us" }
+               className={ 'text-center mt-10 tracking-wide' }>
+                <div className={ 'flex' }>
+                    Made with <BsHeartFill className={ 'mt-1.5 mx-2' }/> by @obviyus
+                </div>
+            </a>
+
+            <a href={ "https://github.com/obviyus/radio" }
+               className={ 'text-center font-semibold tracking-wide' }>
+                <BsGithub size={ '1.5rem' }
+                          className={ 'mt-5' }
+                />
+            </a>
         </div>
     );
 }
