@@ -54,8 +54,11 @@ def skip(update, context):
     pid = context.bot_data["PID"]
 
     if pid:
-        os.kill(pid, signal.SIGINT)
-        context.bot_data["PID"] = None
+        try:
+            os.kill(pid, signal.SIGINT)
+            context.bot_data["PID"] = None
+        except ProcessLookupError:
+            pass
 
         update.message.reply_text("Skipped.")
     else:

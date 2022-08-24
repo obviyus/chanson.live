@@ -29,10 +29,16 @@ def backup_stream(context: CallbackContext):
         """
     )
 
-    song, path = music_search(cursor.fetchone()['display_name'])
-    context.bot_data["song_queue"] = [
-        (song, path, None)
-    ]
+    song = None
+
+    while not song:
+        result = music_search(cursor.fetchone()['display_name'])
+        if result:
+            song, path = result
+
+            context.bot_data["song_queue"] = [
+                (song, path, None)
+            ]
 
 
 def queue_player(context: CallbackContext):
@@ -124,7 +130,10 @@ def music_search(query: str, message: Message = None) -> (Song, Path) or None:
         if not song.song_id:
             song.song_id = song_list[0].song_id
 
-        os.rename(path, f"{song.song_id}.opus")
+        try:
+            os.rename(path, f"{song.song_id}.opus")
+        except TypeError:
+            return
 
         if message:
             cursor.execute(
