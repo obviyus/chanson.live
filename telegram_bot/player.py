@@ -3,6 +3,7 @@ import subprocess
 import threading
 from functools import lru_cache
 from pathlib import Path
+from typing import Tuple
 
 import requests
 from spotdl import Song, Spotdl
@@ -41,7 +42,7 @@ def backup_stream(context: CallbackContext):
                 context.bot_data["song_queue"] = [
                     (song, path, None)
                 ]
-        except TypeError:
+        except TypeError or LookupError:
             pass
 
 
@@ -112,7 +113,7 @@ def queue_player(context: CallbackContext):
 
 
 @lru_cache(maxsize=None)
-def music_search(query: str, message: Message = None) -> (Song, Path) or None:
+def music_search(query: str, message: Message = None) -> Tuple[Song, Path] | None:
     song_list = spotdl.search(
         [query],
     )
@@ -128,7 +129,7 @@ def music_search(query: str, message: Message = None) -> (Song, Path) or None:
             )
 
         if Path(f"{song_list[0].song_id}.opus").exists():
-            return song_list[0], f"{song_list[0].song_id}.opus"
+            return song_list[0], Path(f"{song_list[0].song_id}.opus")
 
         song, path = spotdl.download(song_list[0])
         if not song.song_id:
@@ -156,7 +157,7 @@ def music_search(query: str, message: Message = None) -> (Song, Path) or None:
                 (song.song_id, song.display_name)
             )
 
-        return song, f"{song.song_id}.opus"
+        return song, Path(f"{song.song_id}.opus")
 
 
 def playlist_search(query: str, context, message: Message = None):
