@@ -1,0 +1,62 @@
+{
+  "name": "localhost_fm",
+  "version": "1.0.0",
+  "description": "A WebRTC radio, made using Remix + React.",
+  "main": "server/index.ts",
+  "repository": "git@github.com:obviyus/radio.git",
+  "author": "Ayaan Zaidi <hi@obviy.us>",
+  "license": "MIT",
+  "private": true,
+  "sideEffects": false,
+  "scripts": {
+    "build": "run-s build:*",
+    "build:css": "yarn run generate:css --minify",
+    "build:remix": "remix build",
+    "build:server": "node build.mjs",
+    "dev": "run-p dev:*",
+    "dev:server": "cross-env NODE_ENV=development ts-node ./server/index.ts",
+    "dev:build": "cross-env NODE_ENV=development yarn run build:server --watch",
+    "dev:remix": "cross-env NODE_ENV=development remix watch",
+    "dev:css": "cross-env NODE_ENV=development yarn run generate:css --watch",
+    "generate:css": "tailwindcss -i ./styles/app.css -o app/styles/app.css",
+    "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
+    "format": "prettier --write .",
+    "start": "cross-env NODE_ENV=production ts-node --transpile-only server/index.ts"
+  },
+  "dependencies": {
+    "@remix-run/express": "^1.7.0",
+    "@remix-run/node": "^1.7.0",
+    "@remix-run/react": "^1.7.0",
+    "compression": "^1.7.4",
+    "cross-env": "^7.0.3",
+    "express": "^4.18.1",
+    "mediasoup": "^3.10.6-rc.1",
+    "mediasoup-client": "^3.6.57",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-icons": "^4.4.0",
+    "remix-utils": "^3.3.0",
+    "socket.io": "^4.5.1",
+    "socket.io-client": "^4.5.1"
+  },
+  "devDependencies": {
+    "@remix-run/dev": "^1.7.0",
+    "@remix-run/eslint-config": "^1.7.0",
+    "@types/compression": "^1.7.2",
+    "@types/node": "^18.7.13",
+    "@types/react": "^18.0.15",
+    "@types/react-dom": "^18.0.6",
+    "autoprefixer": "^10.4.8",
+    "esbuild": "^0.15.5",
+    "eslint": "^8.23.0",
+    "nodemon": "^2.0.19",
+    "npm-run-all": "^4.1.5",
+    "postcss": "^8.4.16",
+    "tailwindcss": "^3.1.8",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.8.2"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}
