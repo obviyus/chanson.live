@@ -1,10 +1,5 @@
-import ClientPlayer from "~/utils/player";
-import { ClientOnly } from "remix-utils";
+import ClientPlayer from '~/utils/player';
 
 export default function Index() {
-    return (
-        <ClientOnly>
-            { () => <ClientPlayer/> }
-        </ClientOnly>
-    );
+  return <ClientPlayer />;
 }
