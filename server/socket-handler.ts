@@ -29,6 +29,7 @@ type CallbackFunction = (data: any) => void;
 export class SocketHandler {
   private readonly io: Server;
   private clientCount: number;
+  private metadata: any;
 
   constructor(app: Express.Express, port: number) {
     const index = new http.Server(app);
@@ -166,6 +167,11 @@ export class SocketHandler {
         id: socket.id,
         message: 'Welcome to Localhost FM!',
       });
+
+      /**
+       * Send the current metadata
+       */
+      socket.emit(SocketMessages.METADATA, this.metadata);
     });
   }
 
@@ -194,7 +200,8 @@ export class SocketHandler {
    * @param metadata
    */
   public broadcastMetadata(metadata: SongMetadata) {
-    this.broadcastMessage(SocketMessages.METADATA, metadata);
+    this.metadata = metadata;
+    this.broadcastMessage(SocketMessages.METADATA, this.metadata);
   }
 
   /**
