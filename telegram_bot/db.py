@@ -6,6 +6,7 @@ sqlite_conn = sqlite3.connect(
 sqlite_conn.row_factory = sqlite3.Row
 
 cursor = sqlite_conn.cursor()
+
 # Table for YouTube ID vs. Title
 cursor.execute(
     """

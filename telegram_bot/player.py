@@ -18,12 +18,14 @@ spotdl = Spotdl(
     client_id=config.keys["SPOTIFY_CLIENT_ID"],
     client_secret=config.keys["SPOTIFY_CLIENT_SECRET"],
     no_cache=True,
-    audio_providers=['youtube-music']
+    audio_providers=["youtube-music", "youtube"],
 )
 
 
 def backup_stream(context: CallbackContext):
     cursor = sqlite_conn.cursor()
+
+    # Play a random song from the database
     cursor.execute(
         """
         SELECT * FROM song_stats ORDER BY RANDOM() LIMIT 1;
@@ -31,18 +33,15 @@ def backup_stream(context: CallbackContext):
     )
 
     song = None
-
     while not song:
         try:
-            result = music_search(cursor.fetchone()['display_name'])
+            result = music_search(cursor.fetchone()["display_name"])
 
             if result:
                 song, path = result
 
-                context.bot_data["song_queue"] = [
-                    (song, path, None)
-                ]
-        except TypeError or LookupError:
+                context.bot_data["song_queue"] = [(song, path, None)]
+        except Exception:
             pass
 
 
@@ -72,7 +71,7 @@ def queue_player(context: CallbackContext):
                 "artist": song.artist,
                 "album": song.album_name,
                 "cover": song.cover_url,
-            }
+            },
         ).json()
 
         p = subprocess.Popen(
@@ -83,8 +82,10 @@ def queue_player(context: CallbackContext):
                 "info",
                 "-i",
                 f"{path}",
+                "-q:a",
+                "0",
                 "-map",
-                "0:a:0",
+                "a",
                 "-acodec",
                 "libopus",
                 "-ab",
@@ -103,13 +104,13 @@ def queue_player(context: CallbackContext):
 
         p.wait()
 
-        requests.get("http://127.0.0.1:8081/stopProducer")
-        context.bot_data["now_playing"] = None
-        context.bot_data["song_queue"].pop(0)
+    requests.get("http://127.0.0.1:8081/stopProducer")
+    context.bot_data["now_playing"] = None
+    context.bot_data["song_queue"].pop(0)
 
-        # Backup to play downloaded songs if queue is empty
-        if len(context.bot_data["song_queue"]) == 0:
-            backup_stream(context)
+    # Backup to play downloaded songs if queue is empty
+    if len(context.bot_data["song_queue"]) == 0:
+        backup_stream(context)
 
 
 @lru_cache(maxsize=None)
@@ -137,7 +138,7 @@ def music_search(query: str, message: Message = None) -> Tuple[Song, Path] | Non
 
         try:
             os.rename(path, f"{song.song_id}.opus")
-        except TypeError:
+        except Exception:
             return
 
         if message:
@@ -154,7 +155,7 @@ def music_search(query: str, message: Message = None) -> Tuple[Song, Path] | Non
                 INSERT INTO song_stats (song_id, display_name) VALUES (?, ?)
                 ON CONFLICT (song_id) DO UPDATE SET play_count = play_count + 1;
                 """,
-                (song.song_id, song.display_name)
+                (song.song_id, song.display_name),
             )
 
         return song, Path(f"{song.song_id}.opus")
@@ -192,7 +193,9 @@ def playlist_search(query: str, context, message: Message = None):
 
     for song in playlist[1:]:
         if Path(f"{song.song_id}.opus").exists():
-            context.bot_data["song_queue"].append((song, f"{song.song_id}.opus", message))
+            context.bot_data["song_queue"].append(
+                (song, f"{song.song_id}.opus", message)
+            )
             continue
 
         song, path = spotdl.download(song)
@@ -221,5 +224,5 @@ def playlist_search(query: str, context, message: Message = None):
                 INSERT INTO song_stats (song_id, display_name) VALUES (?, ?)
                 ON CONFLICT (song_id) DO UPDATE SET play_count = play_count + 1;
                 """,
-                (song.song_id, song.display_name)
+                (song.song_id, song.display_name),
             )
