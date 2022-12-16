@@ -104,13 +104,13 @@ def queue_player(context: CallbackContext):
 
         p.wait()
 
-    requests.get("http://127.0.0.1:8081/stopProducer")
-    context.bot_data["now_playing"] = None
-    context.bot_data["song_queue"].pop(0)
+        requests.get("http://127.0.0.1:8081/stopProducer")
+        context.bot_data["now_playing"] = None
+        context.bot_data["song_queue"].pop(0)
 
-    # Backup to play downloaded songs if queue is empty
-    if len(context.bot_data["song_queue"]) == 0:
-        backup_stream(context)
+        # Backup to play downloaded songs if queue is empty
+        if len(context.bot_data["song_queue"]) == 0:
+            backup_stream(context)
 
 
 @lru_cache(maxsize=None)
