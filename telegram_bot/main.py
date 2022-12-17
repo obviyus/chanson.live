@@ -96,7 +96,7 @@ def main():
     job_queue.run_repeating(queue_builder, interval=30, first=30)
 
     # Check every 5s if there's a song playing
-    job_queue.run_repeating(queue_player, interval=10, first=10)
+    job_queue.run_repeating(queue_player, interval=5, first=5)
 
     updater.start_polling()
     updater.idle()
