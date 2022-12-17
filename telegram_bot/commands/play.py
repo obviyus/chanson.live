@@ -97,14 +97,14 @@ def playlist(update: Update, context: CallbackContext) -> None:
             parse_mode=ParseMode.HTML,
         )
     else:
-        playlist = playlist_search(query, update.message)
-        if not playlist:
+        results = playlist_search(query, update.message)
+        if not results:
             message.reply_text(
                 f"No results found for <b>{query}</b>.", parse_mode=ParseMode.HTML
             )
             return
 
-        for song in playlist:
+        for song in results:
             metadata = {
                 "title": song.display_name,
                 "artist": song.artist,
@@ -154,6 +154,6 @@ def playlist(update: Update, context: CallbackContext) -> None:
             context.bot_data["queue"].insert(position_of_first_automated_song, to_queue)
 
         message.reply_text(
-            f"Queued <b>{len(playlist)}</b> songs from <b>{query}</b>.",
+            f"Queued <b>{len(results)}</b> songs from <b>{query}</b>.",
             parse_mode=ParseMode.HTML,
         )

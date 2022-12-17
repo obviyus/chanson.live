@@ -82,3 +82,5 @@ def playlist_search(query: str, message: Message) -> List[Song] | None:
             continue
 
         result.append(playlist_item)
+
+    return result

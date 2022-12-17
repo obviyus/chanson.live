@@ -58,6 +58,9 @@ def queue_builder(context: CallbackContext) -> None:
         )
 
         for song in cursor.fetchall():
+            if song["song_id"] in [s["song_id"] for s in context.bot_data["queue"]]:
+                continue
+
             context.bot_data["queue"].append(
                 {
                     "metadata": {
