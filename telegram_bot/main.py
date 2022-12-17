@@ -1,175 +1,105 @@
-import logging
-import os
-import signal
-from datetime import time
+import datetime
+import html
+import json
+import traceback
 
-import spotdl
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, ParseMode, Update
-from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, Updater
+from telegram import ParseMode, Update
+from telegram.ext import CallbackContext, Updater
 
-import config
-from player import music_search, playlist_search, queue_player
+from commands import command_handler_list, list_of_commands
+from commands.queue_handler import queue_builder
+from config import config, logger
+from player import queue_player
 
 
-def start(update: Update, _: CallbackContext):
+def start(update: Update, _: CallbackContext) -> None:
     """
     Start command handler.
     """
     update.message.reply_text(f"👋 @{update.effective_user.username}")
+    logger.info(f"/start command received from @{update.effective_user.username}")
+
+
+def post_init(context: CallbackContext) -> None:
+    """
+    Initialise the bot.
+    """
+    logger.info(f"Started @{context.bot.username} (ID: {context.bot.id})")
+
+    if (
+        "LOGGING_CHANNEL_ID" in config["TELEGRAM"]
+        and config["TELEGRAM"]["LOGGING_CHANNEL_ID"]
+    ):
+        logger.info(
+            f"Logging to channel ID: {config['TELEGRAM']['LOGGING_CHANNEL_ID']}"
+        )
+
+        context.bot.send_message(
+            chat_id=config["TELEGRAM"]["LOGGING_CHANNEL_ID"],
+            text=f"📝 Started @{context.bot.username} (ID: {context.bot.id}) at {datetime.datetime.now()}",
+        )
+
+    # Set commands for bot instance
+    context.bot.set_my_commands(
+        [(command[0][0], command[1]) for command in list_of_commands]
+    )
+
+    context.bot_data["queue"] = []
+    context.bot_data["PID"] = None
+
+
+def error_handler(update: object, context: CallbackContext) -> None:
+    """Log the error and send a telegram message to notify the developer."""
+    # Log the error before we do anything else, so we can see it even if something breaks.
+    logger.error(msg="Exception while handling an update:", exc_info=context.error)
+
+    # traceback.format_exception returns the usual python message about an exception, but as a
+    # list of strings rather than a single string, so we have to join them together.
+    tb_list = traceback.format_exception(
+        None, context.error, context.error.__traceback__
+    )
+
+    # Build the message with some markup and additional information about what happened.
+    # You might need to add some logic to deal with messages longer than the 4096-character limit.
+    update_str = update.to_dict() if isinstance(update, Update) else str(update)
+    message = (
+        f"An exception was raised while handling an update:\n\n"
+        f"<pre>update = {html.escape(json.dumps(update_str, indent=2, ensure_ascii=False))}"
+        "</pre>\n\n"
+        f"<pre>{html.escape(''.join([tb_list[-1], tb_list[-2]]))}</pre>"
+    )
+
+    if (
+        "LOGGING_CHANNEL_ID" in config["TELEGRAM"]
+        and config["TELEGRAM"]["LOGGING_CHANNEL_ID"]
+    ):
+        # Finally, send the message
+        context.bot.send_message(
+            chat_id=config["TELEGRAM"]["LOGGING_CHANNEL_ID"],
+            text=message,
+            parse_mode=ParseMode.HTML,
+        )
 
 
 def main():
-    updater = Updater(
-        token=config.keys["TELEGRAM_TOKEN"]
-    )
+    updater = Updater(token=config["TELEGRAM"]["TOKEN"])
 
-    dispatcher = updater.dispatcher
-    dispatcher.add_handler(CommandHandler('play', play, run_async=True))
-    dispatcher.add_handler(CommandHandler('playlist', playlist, run_async=True))
-    dispatcher.add_handler(CommandHandler('skip', skip, run_async=True))
-    dispatcher.add_handler(CommandHandler('status', status, run_async=True))
-    dispatcher.add_handler(CommandHandler('q', queue, run_async=True))
-    dispatcher.add_handler(CommandHandler('clear', clear, run_async=True))
-    dispatcher.add_handler(CommandHandler('start', start, run_async=True))
-    dispatcher.add_handler(CallbackQueryHandler(callback=remove_queue_callback_handler, run_async=True))
+    updater.dispatcher.add_error_handler(error_handler)
+    job_queue = updater.job_queue
 
-    dispatcher.bot_data['now_playing'] = None
-    dispatcher.bot_data['song_queue'] = []
-    dispatcher.bot_data['PID'] = None
+    for command in command_handler_list:
+        updater.dispatcher.add_handler(command)
 
-    updater.start_polling(drop_pending_updates=True)
+    job_queue.run_once(post_init, 0)
 
-    logging.info(f"Started @{dispatcher.bot.username} at {time()}")
-    updater.job_queue.run_once(queue_player, when=0)
+    # Every 30s check if there's at least 10 songs in the queue
+    job_queue.run_repeating(queue_builder, interval=30, first=30)
 
+    # Check every 5s if there's a song playing
+    job_queue.run_repeating(queue_player, interval=10, first=10)
+
+    updater.start_polling()
     updater.idle()
-
-
-def clear(update, context):
-    context.bot_data["song_queue"] = context.bot_data["song_queue"][:1]
-    update.message.reply_text("Queue cleared.")
-
-
-def skip(update, context):
-    pid = context.bot_data["PID"]
-
-    if pid:
-        try:
-            os.kill(pid, signal.SIGINT)
-            context.bot_data["PID"] = None
-        except ProcessLookupError:
-            pass
-
-        update.message.reply_text("Skipped.")
-    else:
-        update.message.reply_text("No more songs in queue.")
-
-
-def play(update, context):
-    message = update.message
-    query = " ".join(context.args)
-
-    if not query:
-        message.reply_text(
-            "*Usage:* `/play {SONG_NAME}`\n" "*Example:* `/play Silvertown Blues`"
-        )
-    else:
-        result = music_search(query, update.message)
-        if not result:
-            message.reply_text(f"No results for *{query}*.")
-            return
-
-        song, path = result
-        add_list = [(song, path, update.message)]
-
-        context.bot_data["song_queue"].extend(add_list)
-        if not context.bot_data["now_playing"]:
-            queue_player(context)
-
-
-def playlist(update, context):
-    query = " ".join(context.args)
-
-    if not query:
-        update.message.reply_text(
-            "*Usage:* `/playlist {PLAYLIST_NAME}`\n" "*Example:* `/playlist Silvertown Blues`"
-        )
-        return
-
-    playlist_search(query, context, update.message)
-
-
-def queue_keyboard_builder(song_list):
-    keyboard = []
-
-    for i, (song, path, message) in enumerate(song_list[:5]):
-        song: spotdl.Song
-        message: Message
-
-        keyboard.append(
-            [
-                InlineKeyboardButton(
-                    song.display_name,
-                    callback_data=f"""skip_id:{song.song_id}""",
-                )
-            ]
-        )
-
-    if len(song_list) > 10:
-        keyboard.append(
-            [
-                InlineKeyboardButton(
-                    f"... and {len(song_list) - 10} more",
-                    callback_data="",
-                )
-            ]
-        )
-
-    return InlineKeyboardMarkup(keyboard)
-
-
-def queue(update, context: CallbackContext):
-    if len(context.bot_data["song_queue"]) > 0:
-        song_list = context.bot_data["song_queue"]
-
-        update.message.reply_text(
-            f"{len(song_list)} songs in queue. Tap on a song to remove it:",
-            reply_markup=queue_keyboard_builder(song_list),
-        )
-    else:
-        update.message.reply_text("No songs in queue.")
-
-
-def remove_queue_callback_handler(update, context):
-    query_data = update.callback_query.data.replace("skip_id:", "")
-    if not query_data:
-        return
-
-    song_id = query_data
-    context.bot_data["song_queue"] = filter(
-        lambda x: x[0].song_id != song_id, context.bot_data["song_queue"]
-    )
-
-    update.callback_query.answer(
-        text="Removed from queue.", show_alert=True
-    )
-
-    update.callback_query.edit_message_text(
-        text=f"{len(context.bot_data['song_queue'])} songs in queue.",
-        reply_markup=queue_keyboard_builder(context.bot_data["song_queue"]),
-    )
-
-
-def status(update, context):
-    song = context.bot_data["now_playing"]
-    if song:
-        update.message.reply_text(
-            f"Playing <b>{song.display_name}</b> by <b>{song.artist}</b>."
-            f"<a href='{song.cover_url}'>&#8205;</a>",
-            parse_mode=ParseMode.HTML,
-        )
-    else:
-        update.message.reply_text("No songs being played 🤖")
 
 
 if __name__ == "__main__":
