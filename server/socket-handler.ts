@@ -117,7 +117,7 @@ export class SocketHandler {
             dtlsParameters: consumerTransport.dtlsParameters,
           });
 
-          worker.broadcastMetadata();
+          socket.emit(SocketMessages.METADATA, this.metadata);
         }
       );
 
