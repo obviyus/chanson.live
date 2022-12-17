@@ -6,7 +6,7 @@ from typing import List, Tuple
 from spotdl import Song, Spotdl
 from telegram import Message, ParseMode
 
-from config import config
+from config import config, logger
 
 spotdl = Spotdl(
     headless=True,
@@ -22,7 +22,7 @@ spotdl = Spotdl(
 
 
 @lru_cache(maxsize=None)
-def music_search(query: str, message: Message = None) -> Tuple[Song, Path] | None:
+def music_search(query: str, message: Message = None) -> Song | None:
     song_list = spotdl.search(
         [query],
     )
@@ -36,7 +36,7 @@ def music_search(query: str, message: Message = None) -> Tuple[Song, Path] | Non
             )
 
         if Path(f"./downloads/{song_list[0].song_id}.opus").exists():
-            return song_list[0], Path(f"{song_list[0].song_id}.opus")
+            return song_list[0]
 
         song, path = spotdl.download(song_list[0])
         if not song.song_id:
@@ -47,11 +47,11 @@ def music_search(query: str, message: Message = None) -> Tuple[Song, Path] | Non
         except Exception:
             return
 
-        return song, Path(f"{song.song_id}.opus")
+        return song
 
 
 @lru_cache(maxsize=None)
-def playlist_search(query: str, message: Message) -> List[Tuple[Song, Path]] | None:
+def playlist_search(query: str, message: Message) -> List[Song] | None:
     if message:
         message.reply_text(
             f"Searching for <b>{query}</b>. This might take a while.",
@@ -65,18 +65,20 @@ def playlist_search(query: str, message: Message) -> List[Tuple[Song, Path]] | N
 
     result = []
 
-    for song in playlist:
-        if Path(f"{song.song_id}.opus").exists():
-            result.append((song, Path(f"{song.song_id}.opus")))
+    for playlist_item in playlist:
+        logger.info(f"Queued {playlist_item.display_name} by {playlist_item.artist}.")
+
+        if Path(f"./downloads/{playlist_item.song_id}.opus").exists():
+            result.append(playlist_item)
             continue
 
-        song, path = spotdl.download(song)
+        song, path = spotdl.download(playlist_item)
         if not song.song_id:
-            song.song_id = song[0].song_id
+            song.song_id = playlist_item.song_id
 
         try:
-            os.rename(path, f"{song.song_id}.opus")
+            os.rename(path, f"./downloads/{playlist_item.song_id}.opus")
         except TypeError:
             continue
 
-        result.append((song, Path(f"{song.song_id}.opus")))
+        result.append(playlist_item)
