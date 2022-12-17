@@ -35,6 +35,18 @@ def play(update: Update, context: CallbackContext) -> None:
         }
 
         cursor = sqlite_conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT * FROM song_blacklist WHERE song_id = ?;
+            """,
+            (song.song_id,),
+        )
+
+        if cursor.fetchone():
+            message.reply_text(f"Song <b>{song.display_name}</b> is blacklisted.")
+            return
+
         cursor.execute(
             """
             INSERT INTO song_log (song_id, user_id, title, album, artist, cover_url) VALUES (?, ?, ?, ?, ?, ?);

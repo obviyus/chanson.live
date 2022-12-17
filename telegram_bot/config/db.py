@@ -37,4 +37,16 @@ cursor.execute(
     """
 )
 
+# Table for blacklisted songs
+cursor.execute(
+    """
+    CREATE TABLE IF NOT EXISTS song_blacklist
+    (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        song_id     TEXT UNIQUE,
+        create_time DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    """
+)
+
 cursor.close()

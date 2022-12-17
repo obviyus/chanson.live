@@ -1,5 +1,6 @@
 from telegram.ext import CommandHandler
 
+from .moderation import blacklist
 from .play import play, playlist
 from .queue_handler import get_queue, now_playing, skip
 
@@ -7,6 +8,7 @@ from .queue_handler import get_queue, now_playing, skip
 song_queue = []  # { metadata, song_id, automated }
 
 list_of_commands = [
+    (["blacklist", "bl"], "Blacklist the current song.", blacklist),
     (["nowplaying", "np"], "Get the currently playing song.", now_playing),
     (["play", "p"], "Play a song from Spotify and/or YouTube.", play),
     (["playlist", "pl"], "Play a playlist from Spotify.", playlist),
