@@ -1,11 +1,10 @@
 import subprocess
-from pathlib import Path
 
 import requests
 from telegram import ParseMode
 from telegram.ext import CallbackContext
 
-from commands.queue_handler import update_queue
+from commands.queue_handler import add_song_to_history, update_queue
 
 
 def queue_player(context: CallbackContext):
@@ -48,6 +47,8 @@ def queue_player(context: CallbackContext):
         )
 
         context.bot_data["PID"] = p.pid
+        add_song_to_history(song["song_id"])
+
         p.wait()
 
         requests.get("http://127.0.0.1:8081/stopProducer")

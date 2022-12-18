@@ -96,3 +96,17 @@ def update_queue(context: CallbackContext) -> None:
         )
 
     requests.post("http://127.0.0.1:8081/updateQueue", json=parsed_queue)
+
+
+def add_song_to_history(song_id: str) -> None:
+    """
+    Add a song to the history.
+    """
+
+    cursor = sqlite_conn.cursor()
+    cursor.execute(
+        """
+        INSERT INTO song_history (song_id) VALUES (?);
+        """,
+        (song_id,),
+    )

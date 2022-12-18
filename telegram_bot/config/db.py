@@ -49,4 +49,16 @@ cursor.execute(
     """
 )
 
+# Table for history of songs played
+cursor.execute(
+    """
+    CREATE TABLE IF NOT EXISTS song_history
+    (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        song_id     TEXT,
+        create_time DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    """
+)
+
 cursor.close()
