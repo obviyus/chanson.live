@@ -28,7 +28,7 @@ def play(update: Update, context: CallbackContext) -> None:
             return
 
         metadata = {
-            "title": song.display_name,
+            "title": song.name,
             "artist": song.artist,
             "album": song.album_name,
             "cover_url": song.cover_url,
@@ -44,7 +44,7 @@ def play(update: Update, context: CallbackContext) -> None:
         )
 
         if cursor.fetchone():
-            message.reply_text(f"Song <b>{song.display_name}</b> is blacklisted.")
+            message.reply_text(f"Song <b>{song.name}</b> is blacklisted.")
             return
 
         cursor.execute(
@@ -88,7 +88,7 @@ def play(update: Update, context: CallbackContext) -> None:
         context.bot_data["queue"].insert(position_of_first_automated_song, to_queue)
 
         message.reply_text(
-            f"Queued <b>{song.display_name}</b> by "
+            f"Queued <b>{song.name}</b> by "
             f"<b>{song.artist}</b> at position {position_of_first_automated_song + 1}.",
             parse_mode=ParseMode.HTML,
         )
@@ -118,7 +118,7 @@ def playlist(update: Update, context: CallbackContext) -> None:
 
         for song in results:
             metadata = {
-                "title": song.display_name,
+                "title": song.name,
                 "artist": song.artist,
                 "album": song.album_name,
                 "cover_url": song.cover_url,
