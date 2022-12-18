@@ -1,8 +1,12 @@
+import os
 import subprocess
+from pathlib import Path
 
 import requests
 from telegram import ParseMode
 from telegram.ext import CallbackContext
+
+from commands.search import spotdl
 
 
 def queue_player(context: CallbackContext):
@@ -18,15 +22,25 @@ def queue_player(context: CallbackContext):
                 parse_mode=ParseMode.HTML,
             )
 
+        if not Path(f"./downloads/{song['song_id']}.opus").exists():
+            return
+
+        song_queue = []
+        for song in context.bot_data["queue"]:
+            song_queue.append(
+                {
+                    "title": song["metadata"]["title"],
+                    "artist": song["metadata"]["artist"],
+                    "album": song["metadata"]["album"],
+                    "cover": song["metadata"]["cover_url"],
+                }
+            )
+
         # Get RTP/RTCP ports from Mediasoup
         response = requests.post(
             "http://127.0.0.1:8081/startProducer",
-            data={
-                "title": song["metadata"]["title"],
-                "artist": song["metadata"]["artist"],
-                "album": song["metadata"]["album"],
-                "cover": song["metadata"]["cover_url"],
-            },
+            # Send song queue
+            json=song_queue,
         ).json()
 
         p = subprocess.Popen(
