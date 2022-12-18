@@ -32,3 +32,20 @@ commandServer.get('/stopProducer', async (_, response) => {
   worker.closeProducer();
   response.sendStatus(200);
 });
+
+/**
+ * Update the current queue of songs.
+ */
+commandServer.post('/updateQueue', async (request, response) => {
+  const data = request.body as Array<Record<string, string>>;
+
+  const songQueue: SongMetadata[] = data.map((song) => ({
+    title: song.title,
+    artist: song.artist,
+    album: song.album,
+    cover: song.cover,
+  }));
+
+  socketHandler.broadcastQueue(songQueue);
+  response.sendStatus(200);
+});

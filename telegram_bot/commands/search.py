@@ -1,7 +1,7 @@
 import os
 from functools import lru_cache
 from pathlib import Path
-from typing import List, Tuple
+from typing import List
 
 from spotdl import Song, Spotdl
 from telegram import Message, ParseMode

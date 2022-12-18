@@ -1,4 +1,3 @@
-import os
 import subprocess
 from pathlib import Path
 
@@ -6,7 +5,7 @@ import requests
 from telegram import ParseMode
 from telegram.ext import CallbackContext
 
-from commands.search import spotdl
+from commands.queue_handler import update_queue
 
 
 def queue_player(context: CallbackContext):
@@ -69,5 +68,6 @@ def queue_player(context: CallbackContext):
 
         requests.get("http://127.0.0.1:8081/stopProducer")
         context.bot_data["queue"].pop(0)
+        update_queue(context)
 
         context.bot_data["PID"] = None

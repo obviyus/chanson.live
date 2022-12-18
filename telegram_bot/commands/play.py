@@ -1,6 +1,7 @@
 from telegram import ParseMode, Update
 from telegram.ext import CallbackContext
 
+from commands.queue_handler import update_queue
 from commands.search import music_search, playlist_search
 from config.db import sqlite_conn
 
@@ -86,6 +87,7 @@ def play(update: Update, context: CallbackContext) -> None:
         )
 
         context.bot_data["queue"].insert(position_of_first_automated_song, to_queue)
+        update_queue(context)
 
         message.reply_text(
             f"Queued <b>{song.name}</b> by "
@@ -164,6 +166,7 @@ def playlist(update: Update, context: CallbackContext) -> None:
             )
 
             context.bot_data["queue"].insert(position_of_first_automated_song, to_queue)
+            update_queue(context)
 
         message.reply_text(
             f"Queued <b>{len(results)}</b> songs from <b>{query}</b>.",

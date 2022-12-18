@@ -1,6 +1,7 @@
 import os
 import signal
 
+import requests
 from telegram import ParseMode, Update
 from telegram.ext import CallbackContext
 
@@ -74,3 +75,24 @@ def queue_builder(context: CallbackContext) -> None:
                     "message": None,
                 }
             )
+
+    update_queue(context)
+
+
+def update_queue(context: CallbackContext) -> None:
+    """
+    Update the queue on the webserver.
+    """
+
+    parsed_queue = []
+    for song in context.bot_data["queue"]:
+        parsed_queue.append(
+            {
+                "title": song["metadata"]["title"],
+                "artist": song["metadata"]["artist"],
+                "album": song["metadata"]["album"],
+                "cover": song["metadata"]["cover_url"],
+            }
+        )
+
+    requests.post("http://127.0.0.1:8081/updateQueue", json=parsed_queue)

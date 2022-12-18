@@ -2,7 +2,6 @@ import { type SongMetadata } from '../../server/types';
 
 export default function Queue(props: any) {
   const { queue }: { queue: SongMetadata[] } = props;
-  console.log(queue);
 
   return queue.length > 0 ? (
     <div className={'w-full'}>
@@ -15,10 +14,10 @@ export default function Queue(props: any) {
             }>
             <img src={song.cover} alt={song.title} height={64} width={64} />
 
-            <div className={'flex flex-col m-auto'}>
-              <h2 className={'text-center font-bold'}>{song.title}</h2>
+            <div className={'flex flex-col m-auto text-left'}>
+              <h2 className={'font-bold'}>{song.title}</h2>
 
-              <p className={'text-center'}>{song.artist}</p>
+              <p>{song.artist}</p>
             </div>
           </div>
         ))}
