@@ -10,6 +10,8 @@ import type {
   RtpParameters,
 } from 'mediasoup-client/lib/RtpParameters';
 import { io, type Socket } from 'socket.io-client';
+import Metadata from '~/components/metadata';
+import Queue from '~/components/queue';
 
 export default function ClientPlayer() {
   /**
@@ -20,7 +22,7 @@ export default function ClientPlayer() {
   const [consumer, setConsumer] = useState<Consumer>();
   const [device, setDevice] = useState<Device>();
   const [producerId, setProducerId] = useState<string | undefined>(undefined);
-  const [metadata, setMetadata] = useState<SongMetadata | undefined>();
+  const [queue, setQueue] = useState<SongMetadata[] | undefined>();
   const [clientCount, setClientCount] = useState<number>(0);
   const [socket, setSocket] = useState<Socket>();
 
@@ -157,8 +159,8 @@ export default function ClientPlayer() {
       }
     );
 
-    socket.on(SocketMessages.METADATA, (message: SongMetadata) => {
-      setMetadata(message);
+    socket.on(SocketMessages.QUEUE, (message: SongMetadata[]) => {
+      setQueue(message);
     });
 
     /**
@@ -252,6 +254,7 @@ export default function ClientPlayer() {
       stream.addTrack(consumer.track);
 
       if (audio.current) {
+        audio.current.volume = 0.2;
         audio.current.srcObject = stream;
         audio.current
           .play()
@@ -280,29 +283,13 @@ export default function ClientPlayer() {
   return (
     <div
       className={
-        'flex mx-auto max-w-screen-sm p-2 items-center flex-col pb-16 pt-12 min-h-screen'
+        'flex mx-auto overflow-x-hidden max-w-screen-sm p-2 items-center flex-col pb-16 pt-12 min-h-screen'
       }>
       <h1 className={'text-center text-2xl font-bold'}>Localhost FM 📻</h1>
 
       <p>{clientCount} listener(s)</p>
 
-      {metadata?.cover && metadata.title && (
-        <img
-          src={metadata.cover}
-          alt={metadata.title}
-          className={'max-w-sm mt-10 mx-5 drop-shadow-xl'}
-        />
-      )}
-
-      <h2 className={'pt-10 text-center font-bold tracking-wide'}>
-        {metadata?.title}
-      </h2>
-
-      <h2 className={'pt-2 text-center font-semibold tracking-wide'}>
-        {metadata?.artist}
-      </h2>
-
-      <p className={'pt-2 text-center'}>{metadata?.album}</p>
+      <Metadata metadata={queue ? queue[0] : undefined} />
 
       <audio
         ref={audio}
@@ -311,6 +298,8 @@ export default function ClientPlayer() {
         preload={'auto'}
         className={'mt-10'}
       />
+
+      <Queue queue={queue ? queue.slice(1) : []} />
 
       <a
         href={'https://obviy.us'}

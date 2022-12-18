@@ -9,18 +9,18 @@ import worker from './mediasoup-handler';
 export enum SocketMessages {
   CLIENT_COUNT = 'CLIENT_COUNT',
   CLOSE = 'CLOSE',
+  CONNECT = 'connect',
   CONNECT_CONSUMER_TRANSPORT = 'CONNECT_CONSUMER_TRANSPORT',
   CONNECT_ERROR = 'CONNECT_ERROR',
   CONNECTION = 'connection',
-  CONNECT = 'connect',
   CONSUME = 'CONSUME',
   CREATE_CONSUMER_TRANSPORT = 'CREATE_CONSUMER_TRANSPORT',
   DISCONNECT = 'disconnect',
   ERROR = 'ERROR',
   GET_ROUTER_RTP_CAPABILITIES = 'GET_ROUTER_RTP_CAPABILITIES',
-  METADATA = 'METADATA',
   PRODUCER_CLOSED = 'PRODUCER_CLOSED',
   PRODUCER_STARTED = 'PRODUCER_STARTED',
+  QUEUE = 'QUEUE',
   WELCOME = 'WELCOME',
 }
 
@@ -29,7 +29,7 @@ type CallbackFunction = (data: any) => void;
 export class SocketHandler {
   private readonly io: Server;
   private clientCount: number;
-  private metadata: any;
+  private queue: any;
 
   constructor(app: Express.Express, port: number) {
     const index = new http.Server(app);
@@ -117,7 +117,7 @@ export class SocketHandler {
             dtlsParameters: consumerTransport.dtlsParameters,
           });
 
-          socket.emit(SocketMessages.METADATA, this.metadata);
+          socket.emit(SocketMessages.QUEUE, this.queue);
         }
       );
 
@@ -169,9 +169,9 @@ export class SocketHandler {
       });
 
       /**
-       * Send the current metadata
+       * Send the current queue
        */
-      socket.emit(SocketMessages.METADATA, this.metadata);
+      socket.emit(SocketMessages.QUEUE, this.queue);
     });
   }
 
@@ -196,12 +196,12 @@ export class SocketHandler {
   }
 
   /**
-   * Emit to all connected clients the new metadata of a song.
-   * @param metadata
+   * Emit to all connected clients the new queue of songs.
+   * @param queue
    */
-  public broadcastMetadata(metadata: SongMetadata) {
-    this.metadata = metadata;
-    this.broadcastMessage(SocketMessages.METADATA, this.metadata);
+  public broadcastQueue(queue: SongMetadata[]) {
+    this.queue = queue;
+    this.broadcastMessage(SocketMessages.QUEUE, this.queue);
   }
 
   /**
