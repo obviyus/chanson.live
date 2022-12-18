@@ -86,7 +86,11 @@ def play(update: Update, context: CallbackContext) -> None:
             len(context.bot_data["queue"]),
         )
 
-        context.bot_data["queue"].insert(position_of_first_automated_song, to_queue)
+        position_of_first_automated_song = (
+            1
+            if position_of_first_automated_song == 0
+            else position_of_first_automated_song
+        )
         update_queue(context)
 
         message.reply_text(
@@ -163,6 +167,12 @@ def playlist(update: Update, context: CallbackContext) -> None:
                     if song["automated"]
                 ),
                 len(context.bot_data["queue"]),
+            )
+
+            position_of_first_automated_song = (
+                1
+                if position_of_first_automated_song == 0
+                else position_of_first_automated_song
             )
 
             context.bot_data["queue"].insert(position_of_first_automated_song, to_queue)
