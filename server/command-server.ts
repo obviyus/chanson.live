@@ -12,16 +12,6 @@ commandServer.use(express.urlencoded({ extended: true }));
  */
 commandServer.post('/startProducer', async (request, response) => {
   await worker.createDefaultProducer();
-  const data = request.body as Array<Record<string, string>>;
-
-  const songQueue: SongMetadata[] = data.map((song) => ({
-    title: song.title,
-    artist: song.artist,
-    album: song.album,
-    cover: song.cover,
-  }));
-
-  socketHandler.broadcastQueue(songQueue);
   response.json(worker.getProducerPorts());
 });
 
