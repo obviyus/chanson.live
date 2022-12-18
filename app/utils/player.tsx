@@ -25,6 +25,7 @@ export default function ClientPlayer() {
   const [queue, setQueue] = useState<SongMetadata[] | undefined>();
   const [clientCount, setClientCount] = useState<number>(0);
   const [socket, setSocket] = useState<Socket>();
+  const [volumeChanged, setVolumeChanged] = useState<boolean>(false);
 
   const audio = createRef<HTMLAudioElement>();
 
@@ -254,7 +255,11 @@ export default function ClientPlayer() {
       stream.addTrack(consumer.track);
 
       if (audio.current) {
-        audio.current.volume = 0.2;
+        if (!volumeChanged) {
+          audio.current.volume = 0.2;
+          setVolumeChanged(true);
+        }
+
         audio.current.srcObject = stream;
         audio.current
           .play()
