@@ -41,7 +41,7 @@ schema = {
 
 config = {
     "TELEGRAM": {
-        "ADMINS": os.environ.get("ADMINS", "").split(" "),
+        "ADMINS": list(map(int, os.environ.get("ADMINS", "").split(" "))),
         "TOKEN": os.environ.get("TELEGRAM_TOKEN"),
         "LOGGING_CHANNEL_ID": int(os.environ.get("LOGGING_CHANNEL_ID"))
         if os.environ.get("LOGGING_CHANNEL_ID")
