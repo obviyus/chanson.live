@@ -54,14 +54,16 @@ def queue_builder(context: CallbackContext) -> None:
         cursor = sqlite_conn.cursor()
         cursor.execute(
             """
-            SELECT * FROM song_log ORDER BY RANDOM() LIMIT 10;
+            SELECT *
+            FROM song_log
+            WHERE song_id NOT IN
+                  (SELECT song_id FROM song_history ORDER BY song_history.id DESC LIMIT 100)
+            ORDER BY RANDOM()
+            LIMIT 10;
             """
         )
 
         for song in cursor.fetchall():
-            if song["song_id"] in [s["song_id"] for s in context.bot_data["queue"]]:
-                continue
-
             context.bot_data["queue"].append(
                 {
                     "metadata": {
