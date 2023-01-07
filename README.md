@@ -1,4 +1,4 @@
-# 📻 Localhost FM
+# 📻 chanson.live
 
 ## ⚠ Extremely Alpha
 
