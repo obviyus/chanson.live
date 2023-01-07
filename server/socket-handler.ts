@@ -165,7 +165,7 @@ export class SocketHandler {
       socket.emit(SocketMessages.WELCOME, {
         type: SocketMessages.WELCOME,
         id: socket.id,
-        message: 'Welcome to Localhost FM!',
+        message: 'Welcome to chanson.live!',
       });
 
       /**

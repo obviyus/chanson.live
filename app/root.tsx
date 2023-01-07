@@ -15,7 +15,7 @@ import TailwindCSS from '~/styles/app.css';
 export const meta: MetaFunction = () => ({
   // eslint-disable-next-line unicorn/text-encoding-identifier-case
   'charset': 'utf-8',
-  'title': 'Localhost FM',
+  'title': 'chanson.live',
   'viewport': 'width=device-width,initial-scale=1',
   'keywords': 'radio,webrtc,mediasoup,remix,react,typescript',
   'description': 'A WebRTC radio station.',
@@ -24,10 +24,10 @@ export const meta: MetaFunction = () => ({
   'twitter:image': Logo,
   'twitter:card': 'summary_large_image',
   'og:image': Logo,
-  'og:title': 'Localhost FM',
+  'og:title': 'chanson.live',
   'og:description': 'A WebRTC radio station.',
   'og:url': 'https://radio.superserio.us',
-  'og:site_name': 'Localhost FM',
+  'og:site_name': 'chanson.live',
 });
 
 export const links: LinksFunction = () => {
@@ -43,7 +43,7 @@ export default function App() {
       <head>
         <Meta />
         <Links />
-        <title>Localhost FM</title>
+        <title>chanson.live</title>
       </head>
       <body>
         <Outlet />

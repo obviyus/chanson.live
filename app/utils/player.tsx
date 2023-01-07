@@ -290,7 +290,7 @@ export default function ClientPlayer() {
       className={
         'flex mx-auto overflow-x-hidden max-w-screen-sm p-2 items-center flex-col pb-16 pt-12 min-h-screen'
       }>
-      <h1 className={'text-center text-2xl font-bold'}>Localhost FM 📻</h1>
+      <h1 className={'text-center text-2xl font-bold'}>chanson.live 📻</h1>
 
       <p>{clientCount} listener(s)</p>
 
