@@ -9,7 +9,7 @@ This is something I threw together over an idle weekend. There's a bunch of impr
 - add a queue on the website
 - ability to request music on the website
 
-You can find a live example here: https://radio.superserio.us/
+You can find a live example here: https://radio.obviy.us/
 
 If nobody's playing music via the [Telegram bot](https://t.me/SSRadioBot), it'll play from a list of previously played songs.
 
