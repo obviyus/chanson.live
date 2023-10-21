@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "files": ["remix.env.d.ts", "core.server.ts"],
+  "include": [],
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "dist",
+    "baseUrl": ".",
+    "sourceMap": true,
+    "noEmit": false
+  }
+}
