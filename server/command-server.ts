@@ -29,6 +29,7 @@ commandServer.get("/stopProducer", async (_, response) => {
 commandServer.post("/updateQueue", async (request, response) => {
 	const data = request.body as Array<Record<string, string>>;
 
+	// @ts-ignore
 	const songQueue: SongMetadata[] = data.map((song) => ({
 		title: song.title,
 		artist: song.artist,

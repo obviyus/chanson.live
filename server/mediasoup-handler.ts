@@ -161,6 +161,7 @@ export class MediasoupWorker {
 	 * Close a consumer.
 	 */
 	public closeConsumer(consumerID: string): void {
+		// @ts-ignore
 		this.consumers[consumerID].close();
 		delete this.consumers[consumerID];
 		delete this.transports[consumerID];
