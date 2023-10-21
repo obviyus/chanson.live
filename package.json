@@ -11,8 +11,7 @@
   "scripts": {
     "build": "run-p \"build:*\"",
     "build:remix": "remix build",
-    "build:server": "tsc -p tsconfig.server.json",
-    "start:core": "cross-env NODE_ENV=production node dist/core.server.js",
+    "start:core": "cross-env NODE_ENV=production ts-node --transpile-only ./core.server.ts",
     "dev": "run-s dev:remix",
     "dev:remix": "remix dev -c \"npm run dev:node\" --manual",
     "dev:node": "cross-env NODE_ENV=development nodemon --exec 'ts-node ./core.server.ts'  --watch ./core.server.ts",
