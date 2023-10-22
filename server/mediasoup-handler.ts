@@ -15,6 +15,25 @@ import { socketHandler } from "../core.server";
 
 const mediasoup = require("mediasoup");
 
+let listenIps: { ip: string; announcedIp: string | null }[];
+if (process.env.NODE_ENV !== "production") {
+	listenIps = [
+		{
+			ip: "127.0.0.1",
+			announcedIp: null,
+		},
+	];
+} else {
+	listenIps = [
+		{
+			ip: process.env.MEDIASOUP_LISTEN_IP!,
+			announcedIp: process.env.MEDIASOUP_ANNOUNCED_IP!,
+		},
+	];
+}
+
+console.log(`MediaSoup listen IPs: ${JSON.stringify(listenIps)}`);
+
 const mediasoupOptions = {
 	/**
 	 * Worker options.
@@ -44,12 +63,7 @@ const mediasoupOptions = {
 	 * WebRtcTransport options.
 	 */
 	webRtcTransport: {
-		listenIps: [
-			{
-				ip: "127.0.0.1",
-				announcedIp: null,
-			},
-		],
+		listenIps,
 		initialAvailableOutgoingBitrate: 1_000_000,
 		initialAvailableIncomingBitrate: 1_000_000,
 		maxIncomingBitrate: 1_500_000,
