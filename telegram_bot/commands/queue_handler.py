@@ -2,13 +2,14 @@ import os
 import signal
 
 import requests
-from telegram import ParseMode, Update
-from telegram.ext import CallbackContext
+from telegram import Update
+from telegram.constants import ParseMode
+from telegram.ext import ContextTypes
 
 from config.db import sqlite_conn
 
 
-def get_queue(update: Update, context: CallbackContext) -> None:
+async def get_queue(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
     Get the current queue up to
     """
@@ -17,24 +18,28 @@ def get_queue(update: Update, context: CallbackContext) -> None:
     for index, song in enumerate(context.bot_data["queue"][:10]):
         text += f"{index + 1}. <b>{song['metadata']['title']}</b>\n"
 
-    update.message.reply_text(text, parse_mode=ParseMode.HTML)
+    await update.message.reply_text(text, parse_mode=ParseMode.HTML)
 
 
-def now_playing(update: Update, context: CallbackContext) -> None:
+async def now_playing(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
     Get the currently playing song.
     """
 
+    if len(context.bot_data["queue"]) == 0:
+        await update.message.reply_text("Nothing is playing right now.")
+        return
+
     song = context.bot_data["queue"][0]
 
-    update.message.reply_text(
+    await update.message.reply_text(
         f"📀 Playing <b>{song['metadata']['title']}</b> by <b>{song['metadata']['artist']}</b>."
         f"<a href='{song['metadata']['cover_url']}'>&#8205;</a>",
         parse_mode=ParseMode.HTML,
     )
 
 
-def skip(update: Update, context: CallbackContext) -> None:
+async def skip(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
     Skip the current song.
     """
@@ -42,10 +47,10 @@ def skip(update: Update, context: CallbackContext) -> None:
     pid = context.bot_data["PID"]
     os.kill(pid, signal.SIGINT)
 
-    update.message.reply_text("Skipped the current song.")
+    await update.message.reply_text("Skipped the current song.")
 
 
-def queue_builder(context: CallbackContext) -> None:
+async def queue_builder(context: ContextTypes.DEFAULT_TYPE) -> None:
     """
     Check if there's at least 10 songs in the queue. If not, pick random songs from SQLite.
     """
@@ -78,10 +83,10 @@ def queue_builder(context: CallbackContext) -> None:
                 }
             )
 
-    update_queue(context)
+    await update_queue(context)
 
 
-def update_queue(context: CallbackContext) -> None:
+async def update_queue(context: ContextTypes.DEFAULT_TYPE) -> None:
     """
     Update the queue on the webserver.
     """
@@ -97,10 +102,10 @@ def update_queue(context: CallbackContext) -> None:
             }
         )
 
-    requests.post("http://127.0.0.1:8081/updateQueue", json=parsed_queue)
+    requests.post("http://127.0.0.1:8082/updateQueue", json=parsed_queue)
 
 
-def add_song_to_history(song_id: str) -> None:
+async def add_song_to_history(song_id: str) -> None:
     """
     Add a song to the history.
     """

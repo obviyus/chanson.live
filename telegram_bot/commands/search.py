@@ -1,86 +1,108 @@
-import os
 from functools import lru_cache
 from pathlib import Path
-from typing import List
 
-from spotdl import Song, Spotdl
-from telegram import Message, ParseMode
+import spotipy
+import yt_dlp
+from config import config
+from spotipy.oauth2 import SpotifyClientCredentials
+from telegram import Message
+from telegram.constants import ParseMode
 
-from config import config, logger
-
-spotdl = Spotdl(
-    headless=True,
-    client_id=config["API"]["SPOTIFY_CLIENT_ID"],
-    client_secret=config["API"]["SPOTIFY_CLIENT_SECRET"],
-    no_cache=False,
-    audio_providers=["youtube-music", "youtube"],
-    cache_path=".spotdl-cache",
-    bitrate="128k",
-    output_format="opus",
-    output="./downloads",
+sp = spotipy.Spotify(
+    auth_manager=SpotifyClientCredentials(
+        client_id=config["API"]["SPOTIFY_CLIENT_ID"],
+        client_secret=config["API"]["SPOTIFY_CLIENT_SECRET"],
+    )
 )
 
 
-@lru_cache(maxsize=None)
-def music_search(query: str, message: Message = None) -> Song | None:
-    song_list = spotdl.search(
-        [query],
-    )
+def get_song_metadata_by_name(song_name):
+    # Search for the song on Spotify
+    results = sp.search(q=song_name, type="track", limit=1)
+    if not results["tracks"]["items"]:
+        raise ValueError(f"No track found for {song_name}")
 
-    if song_list:
+    # Get the first (most relevant) track from the search results
+    return results["tracks"]["items"][0]
+
+
+def download_song(song_title, song_artist, song_id):
+    ydl_opts = {
+        "default_search": "ytsearch",
+        "format": "bestaudio/best",
+        "outtmpl": f"./downloads/{song_id}.%(ext)s",
+        "postprocessors": [
+            {
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "opus",
+                "preferredquality": "192",
+            }
+        ],
+    }
+
+    query = f"{song_title} {song_artist}"
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([query])
+
+
+@lru_cache(maxsize=None)
+async def music_search(query: str, message: Message = None):
+    song_metadata = get_song_metadata_by_name(query)
+
+    if song_metadata:
         if message:
-            message.reply_text(
-                f"Adding <b>{song_list[0].display_name}</b> by <b>{song_list[0].artist}</b> to the queue."
-                f"<a href='{song_list[0].cover_url}'>&#8205;</a>",
+            await message.reply_text(
+                f"Adding <b>{song_metadata['name']}</b> by <b>{song_metadata['artists'][0]['name']}</b> to the queue."
+                f"<a href='{song_metadata['album']['images'][0]['url']}'>&#8205;</a>",
                 parse_mode=ParseMode.HTML,
             )
 
-        if Path(f"./downloads/{song_list[0].song_id}.opus").exists():
-            return song_list[0]
+        if Path(f"./downloads/{song_metadata['id']}.opus").exists():
+            return song_metadata
 
-        song, path = spotdl.download(song_list[0])
-        if not song.song_id:
-            song.song_id = song_list[0].song_id
-
-        try:
-            os.rename(path, f"./downloads/{song.song_id}.opus")
-        except Exception:
-            return
-
-        return song
-
-
-@lru_cache(maxsize=None)
-def playlist_search(query: str, message: Message) -> List[Song] | None:
-    if message:
-        message.reply_text(
-            f"Searching for <b>{query}</b>. This might take a while.",
-            parse_mode=ParseMode.HTML,
+        download_song(
+            song_metadata["name"],
+            song_metadata["artists"][0]["name"],
+            song_metadata["id"],
         )
 
-    playlist = spotdl.search([query])
-    if not playlist:
-        message.reply_text(f"No results for *{query}*.")
-        return
+        return song_metadata
 
-    result = []
 
-    for playlist_item in playlist:
-        logger.info(f"Queued {playlist_item.display_name} by {playlist_item.artist}.")
+# @lru_cache(maxsize=None)
+# async def playlist_search(query: str, message: Message):
+#     """
+#     Queue all songs from a YouTube playlist.
+#     """
+#     if message:
+#         await message.reply_text(
+#             f"Searching for <b>{query}</b>. This might take a while.",
+#             parse_mode=ParseMode.HTML,
+#         )
 
-        if Path(f"./downloads/{playlist_item.song_id}.opus").exists():
-            result.append(playlist_item)
-            continue
+#     playlist = get_song_metadata_by_name(query)
+#     if not playlist:
+#         await message.reply_text(f"No results for *{query}*.")
+#         return
 
-        song, path = spotdl.download(playlist_item)
-        if not song.song_id:
-            song.song_id = playlist_item.song_id
+#     result = []
 
-        try:
-            os.rename(path, f"./downloads/{playlist_item.song_id}.opus")
-        except TypeError:
-            continue
+#     for playlist_item in playlist:
+#         logger.info(f"Queued {playlist_item.display_name} by {playlist_item.artist}.")
 
-        result.append(playlist_item)
+#         if Path(f"./downloads/{playlist_item.song_id}.opus").exists():
+#             result.append(playlist_item)
+#             continue
 
-    return result
+#         song, path = await download_song(playlist_item)
+#         if not song.song_id:
+#             song.song_id = playlist_item.song_id
+
+#         try:
+#             os.rename(path, f"./downloads/{playlist_item.song_id}.opus")
+#         except TypeError:
+#             continue
+
+#         result.append(playlist_item)
+
+#     return result

@@ -2,13 +2,13 @@ import os
 import signal
 
 from telegram import Update
-from telegram.ext import CallbackContext
+from telegram.ext import ContextTypes
 
 from config import config
 from config.db import sqlite_conn
 
 
-def blacklist(update: Update, context: CallbackContext) -> None:
+async def blacklist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
     Blacklist the current song in the database.
     """

@@ -1,30 +1,40 @@
 import datetime
 import html
 import json
+import logging
 import traceback
 
-from telegram import ParseMode, Update
-from telegram.ext import CallbackContext, Updater
-
-from commands import command_handler_list, list_of_commands
+from commands import command_handler_list
 from commands.queue_handler import queue_builder
 from config import config, logger
 from player import queue_player
+from telegram import Update
+from telegram.constants import ParseMode
+from telegram.ext import (
+    AIORateLimiter,
+    Application,
+    ApplicationBuilder,
+    CommandHandler,
+    ContextTypes,
+)
 
 
-def start(update: Update, _: CallbackContext) -> None:
+async def start(update: Update, _: ContextTypes.DEFAULT_TYPE):
     """
     Start command handler.
     """
-    update.message.reply_text(f"👋 @{update.effective_user.username}")
-    logger.info(f"/start command received from @{update.effective_user.username}")
+    await update.message.reply_text(
+        f"👋 @{update.effective_user.username}"
+        f"\n\n I'm a bot that plays music from Spotify and/or YouTube on a WebRTC radio @ https://radio.obviy.us."
+        f"\n\nYou can request music using /play"
+    )
 
 
-def post_init(context: CallbackContext) -> None:
+async def post_init(application: Application) -> None:
     """
     Initialise the bot.
     """
-    logger.info(f"Started @{context.bot.username} (ID: {context.bot.id})")
+    logger.info(f"Started @{application.bot.username} (ID: {application.bot.id})")
 
     if (
         "LOGGING_CHANNEL_ID" in config["TELEGRAM"]
@@ -34,24 +44,18 @@ def post_init(context: CallbackContext) -> None:
             f"Logging to channel ID: {config['TELEGRAM']['LOGGING_CHANNEL_ID']}"
         )
 
-        context.bot.send_message(
+        await application.bot.send_message(
             chat_id=config["TELEGRAM"]["LOGGING_CHANNEL_ID"],
-            text=f"📝 Started @{context.bot.username} (ID: {context.bot.id}) at {datetime.datetime.now()}",
+            text=f"📝 Started @{application.bot.username} (ID: {application.bot.id}) at {datetime.datetime.now()}",
         )
 
-    # Set commands for bot instance
-    context.bot.set_my_commands(
-        [(command[0][0], command[1]) for command in list_of_commands]
-    )
-
-    context.bot_data["queue"] = []
-    context.bot_data["PID"] = None
+    application.bot_data["queue"] = []
+    application.bot_data["PID"] = None
 
 
-def error_handler(update: object, context: CallbackContext) -> None:
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Log the error and send a telegram message to notify the developer."""
-    # Log the error before we do anything else, so we can see it even if something breaks.
-    logger.error(msg="Exception while handling an update:", exc_info=context.error)
+    logging.error(msg="Exception while handling an update:", exc_info=context.error)
 
     # traceback.format_exception returns the usual python message about an exception, but as a
     # list of strings rather than a single string, so we have to join them together.
@@ -69,12 +73,9 @@ def error_handler(update: object, context: CallbackContext) -> None:
         f"<pre>{html.escape(''.join([tb_list[-1], tb_list[-2]]))}</pre>"
     )
 
-    if (
-        "LOGGING_CHANNEL_ID" in config["TELEGRAM"]
-        and config["TELEGRAM"]["LOGGING_CHANNEL_ID"]
-    ):
+    if config["TELEGRAM"]["LOGGING_CHANNEL_ID"]:
         # Finally, send the message
-        context.bot.send_message(
+        await context.bot.send_message(
             chat_id=config["TELEGRAM"]["LOGGING_CHANNEL_ID"],
             text=message,
             parse_mode=ParseMode.HTML,
@@ -82,14 +83,17 @@ def error_handler(update: object, context: CallbackContext) -> None:
 
 
 def main():
-    updater = Updater(token=config["TELEGRAM"]["TOKEN"])
+    logging.info("Loading config...")
+    application = (
+        ApplicationBuilder()
+        .token(config["TELEGRAM"]["TOKEN"])
+        .rate_limiter(AIORateLimiter(max_retries=10))
+        .post_init(post_init)
+        .concurrent_updates(True)
+        .build()
+    )
 
-    updater.dispatcher.add_error_handler(error_handler)
-    job_queue = updater.job_queue
-
-    for command in command_handler_list:
-        updater.dispatcher.add_handler(command)
-
+    job_queue = application.job_queue
     job_queue.run_once(post_init, 0)
 
     # Every 30s check if there's at least 10 songs in the queue
@@ -98,8 +102,19 @@ def main():
     # Check every 5s if there's a song playing
     job_queue.run_repeating(queue_player, interval=5, first=5)
 
-    updater.start_polling()
-    updater.idle()
+    logging.info("Starting bot...")
+    application.add_error_handler(error_handler)
+
+    application.add_handlers(
+        {
+            0: [
+                CommandHandler("start", start),
+                *command_handler_list,
+            ],
+        }
+    )
+
+    application.run_polling()
 
 
 if __name__ == "__main__":
