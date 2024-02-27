@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/obviyus/chanson.live/compare/v1.2.0...v1.2.1) (2024-02-27)
+
+
+### Bug Fixes
+
+* **imports:** avoid controller imports ([663b4ec](https://github.com/obviyus/chanson.live/commit/663b4ece58cf7e32dc1e089a4bd3ada7ea7f73ab))
+
 # [1.2.0](https://github.com/obviyus/chanson.live/compare/v1.1.0...v1.2.0) (2024-02-27)
 
 
