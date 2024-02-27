@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/obviyus/chanson.live/compare/v1.1.0...v1.2.0) (2024-02-27)
+
+
+### Features
+
+* **db:** configurable DB path ([a51ac88](https://github.com/obviyus/chanson.live/commit/a51ac882b38a80acaa14fe986a9648d1dbe3bde9))
+
 # [1.1.0](https://github.com/obviyus/chanson.live/compare/v1.0.0...v1.1.0) (2024-02-27)
 
 
