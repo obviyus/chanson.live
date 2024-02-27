@@ -35,6 +35,10 @@ schema = {
                 "type": "string",
                 "required": True,
             },
+            "COMMAND_SERVER_HOST": {
+                "type": "string",
+                "required": True,
+            }
         },
     },
 }
@@ -50,6 +54,7 @@ config = {
     "API": {
         "SPOTIFY_CLIENT_ID": os.environ.get("SPOTIFY_CLIENT_ID"),
         "SPOTIFY_CLIENT_SECRET": os.environ.get("SPOTIFY_CLIENT_SECRET"),
+        "COMMAND_SERVER_HOST": os.environ.get("COMMAND_SERVER_HOST", "127.0.0.1")
     },
 }
 

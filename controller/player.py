@@ -2,6 +2,7 @@ import asyncio
 
 import requests
 from commands.queue_handler import add_song_to_history, update_queue
+from controller import config
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
@@ -9,7 +10,7 @@ from telegram.ext import ContextTypes
 async def on_process_complete(process, context: ContextTypes.DEFAULT_TYPE):
     await process.wait()
 
-    requests.get("http://127.0.0.1:8082/stopProducer")
+    requests.get(f"http://{config['API']['COMMAND_SERVER_HOST']}:8082/stopProducer")
     context.bot_data["queue"].pop(0)
     await update_queue(context)
 
@@ -31,7 +32,7 @@ async def queue_player(context: ContextTypes.DEFAULT_TYPE):
 
         # Get RTP/RTCP ports from Mediasoup
         response = requests.post(
-            "http://127.0.0.1:8082/startProducer",
+            f"http://{config['API']['COMMAND_SERVER_HOST']}:8082/startProducer",
         ).json()
 
         cmd = [

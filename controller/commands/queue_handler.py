@@ -2,6 +2,7 @@ import os
 import signal
 
 import requests
+from controller import config
 from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
@@ -102,7 +103,7 @@ async def update_queue(context: ContextTypes.DEFAULT_TYPE) -> None:
             }
         )
 
-    requests.post("http://127.0.0.1:8082/updateQueue", json=parsed_queue)
+    requests.post(f"http://{config['API']['COMMAND_SERVER_HOST']}/updateQueue", json=parsed_queue)
 
 
 async def add_song_to_history(song_id: str) -> None:
