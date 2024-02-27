@@ -5,7 +5,7 @@ ENV NODE_ENV production
 FROM base as deps
 WORKDIR /code
 
-COPY package.json package-lock.json ./
+COPY ./worker/package.json ./worker/package-lock.json ./
 
 RUN npm ci --omit=dev
 
@@ -15,7 +15,7 @@ WORKDIR /code
 
 COPY --from=deps /code/node_modules /code/node_modules
 
-COPY . .
+COPY ./worker/ .
 
 RUN npm run build
 

@@ -13,7 +13,7 @@ FROM python-base as builder-base
 RUN pip install poetry
 
 WORKDIR /code
-COPY poetry.lock pyproject.toml /code/
+COPY ./controller/poetry.lock ./controller/pyproject.toml ./
 
 RUN poetry install --no-dev
 
@@ -22,7 +22,7 @@ RUN apt-get update \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
-COPY . .
+COPY ./controller/ .
 
 ENTRYPOINT ["dumb-init", "--", "poetry", "run"]
 CMD ["python", "src/main.py"]
