@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/obviyus/chanson.live/compare/v1.0.0...v1.1.0) (2024-02-27)
+
+
+### Features
+
+* **controller:** allow customizable command server host ([9c439d7](https://github.com/obviyus/chanson.live/commit/9c439d73f1daf8e75f42c64ff20d4e65be115a12))
+
 # 1.0.0 (2024-02-27)
 
 
