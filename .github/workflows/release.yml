@@ -32,7 +32,7 @@ jobs:
         include:
           - dockerfile: ./worker/Dockerfile
             image: ghcr.io/obviyus/chanson.live/worker
-          - dockerfile: ./src/controller/Dockerfile
+          - dockerfile: ./controller/Dockerfile
             image: ghcr.io/obviyus/chanson.live/controller
     permissions:
       packages: write
