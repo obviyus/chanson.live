@@ -11,7 +11,7 @@ This is something I threw together over an idle weekend. There's a bunch of impr
 
 You can find a live example here: https://radio.obviy.us/
 
-If nobody's playing music via the [Telegram bot](https://t.me/SSRadioBot), it'll play from a list of previously played songs.
+If nobody's playing music via the [Telegram bot](https://t.me/SSRadioBot), it'll play from a list of previously played songs. There are plans to make a functional web UI someday™.
 
 ## Architectural Overview
 
