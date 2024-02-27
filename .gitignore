@@ -147,7 +147,6 @@ build/
 *.mp3
 *.pyc
 *.db
-worker/app/styles/app.css
 
 # IDE
 **/.idea/
