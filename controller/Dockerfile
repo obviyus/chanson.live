@@ -18,7 +18,7 @@ COPY ./controller/poetry.lock ./controller/pyproject.toml ./
 RUN poetry install --no-dev
 
 RUN apt-get update \
-  && apt-get install --no-install-recommends -y dumb-init \
+  && apt-get install --no-install-recommends -y dumb-init ffmpeg \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
