@@ -1,8 +1,11 @@
 import sqlite3
 
+from controller import config
+
 sqlite_conn = sqlite3.connect(
-    "./chanson.live.db", check_same_thread=False, isolation_level=None
+    config["TELEGRAM"]["DATABASE_PATH"], check_same_thread=False, isolation_level=None
 )
+
 sqlite_conn.row_factory = sqlite3.Row
 
 cursor = sqlite_conn.cursor()

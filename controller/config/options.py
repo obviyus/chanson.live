@@ -22,6 +22,10 @@ schema = {
                 "required": False,
                 "nullable": True,
             },
+            "DATABASE_PATH": {
+                "type": "string",
+                "required": False
+            }
         },
     },
     "API": {
@@ -50,6 +54,7 @@ config = {
         "LOGGING_CHANNEL_ID": int(os.environ.get("LOGGING_CHANNEL_ID"))
         if os.environ.get("LOGGING_CHANNEL_ID")
         else None,
+        "DATABASE_PATH": os.environ.get("DATABASE_PATH", "./chanson-live.db")
     },
     "API": {
         "SPOTIFY_CLIENT_ID": os.environ.get("SPOTIFY_CLIENT_ID"),
