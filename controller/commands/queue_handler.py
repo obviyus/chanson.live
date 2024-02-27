@@ -2,7 +2,7 @@ import os
 import signal
 
 import requests
-from controller import config
+from config import config
 from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes

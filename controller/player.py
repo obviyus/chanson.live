@@ -2,7 +2,7 @@ import asyncio
 
 import requests
 from commands.queue_handler import add_song_to_history, update_queue
-from controller import config
+from config import config
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 

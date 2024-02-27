@@ -1,6 +1,6 @@
 import sqlite3
 
-from controller import config
+from config import config
 
 sqlite_conn = sqlite3.connect(
     config["TELEGRAM"]["DATABASE_PATH"], check_same_thread=False, isolation_level=None
