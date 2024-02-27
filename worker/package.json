@@ -17,11 +17,13 @@
   },
   "dependencies": {
     "@remix-run/css-bundle": "^2.7.2",
+    "@remix-run/dev": "^2.7.2",
     "@remix-run/express": "^2.7.2",
     "@remix-run/node": "^2.7.2",
     "@remix-run/react": "^2.7.2",
     "compression": "^1.7.4",
     "cross-env": "^7.0.3",
+    "esbuild": "^0.19.5",
     "express": "^4.18.2",
     "isbot": "^5.1.0",
     "mediasoup": "^3.13.22",
@@ -31,13 +33,11 @@
     "react-icons": "^5.0.1",
     "socket.io": "^4.7.4",
     "socket.io-client": "^4.7.4",
-    "tsx": "^4.7.1",
-    "@remix-run/dev": "^2.7.2",
-    "esbuild": "^0.19.5"
+    "tailwindcss": "^3.4.1",
+    "tsx": "^4.7.1"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.5.3",
-    "@swc/core": "^1.4.2",
     "@types/compression": "^1.7.5",
     "@types/node": "^18.18.6",
     "@types/react": "^18.2.60",
@@ -49,7 +49,6 @@
     "postcss": "^8.4.35",
     "remix-development-tools": "^3.7.4",
     "shx": "^0.3.4",
-    "tailwindcss": "^3.4.1",
     "typescript": "^5.3.3"
   },
   "engines": {

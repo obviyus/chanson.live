@@ -30,8 +30,5 @@
     "paths": {
       "~/*": ["app/*"]
     }
-  },
-  "ts-node": {
-    "swc": true
   }
 }
