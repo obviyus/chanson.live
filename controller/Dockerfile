@@ -25,4 +25,4 @@ RUN apt-get update \
 COPY ./controller/ .
 
 ENTRYPOINT ["dumb-init", "--", "poetry", "run"]
-CMD ["python", "src/main.py"]
+CMD ["python", "main.py"]
