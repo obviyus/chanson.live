@@ -1,0 +1,19 @@
+{
+  "name": "chanson.live",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run app/server/index.ts",
+    "start": "NODE_ENV=production bun run app/server/index.ts",
+    "test:stream": "bun run app/server/test-stream.ts"
+  },
+  "dependencies": {
+    "mediasoup": "^3.14.16",
+    "mediasoup-client": "^3.7.17"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.7.2"
+  }
+}

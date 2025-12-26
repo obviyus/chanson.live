@@ -148,5 +148,11 @@ build/
 *.pyc
 *.db
 
+# Data directory (SQLite database)
+data/
+
+# Downloads cache
+downloads/
+
 # IDE
 **/.idea/
