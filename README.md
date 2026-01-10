@@ -81,6 +81,7 @@ YouTube may block downloads from VPS IP ranges. The **external provider** archit
 ```bash
 PROVIDER_MODE=external
 PROVIDER_TOKEN=your_secure_token
+ADMIN_TOKEN=your_secure_token
 ```
 
 ### Provider Configuration
@@ -107,6 +108,7 @@ The provider connects to the VPS via WebSocket, receives download requests, fetc
 | `PORT` | `3000` | HTTP server port |
 | `PROVIDER_MODE` | `local` | `local` or `external` |
 | `PROVIDER_TOKEN` | — | Shared secret for provider auth |
+| `ADMIN_TOKEN` | — | Admin UI auth (defaults to `PROVIDER_TOKEN`) |
 | `MEDIASOUP_ANNOUNCED_IP` | auto | Public IP for WebRTC (required for production) |
 | `MEDIASOUP_LISTEN_IP` | `0.0.0.0` | Bind address |
 | `RTC_MIN_PORT` | `10000` | WebRTC UDP port range start |
@@ -115,6 +117,11 @@ The provider connects to the VPS via WebSocket, receives download requests, fetc
 | `AUDIO_QUALITY` | `5` | yt-dlp quality (1-10, lower = better) |
 | `CACHE_MAX_BYTES` | `5368709120` | Max cache size (5GB) |
 | `DOWNLOAD_DIR` | `./downloads` | Audio cache directory |
+
+## Admin
+
+- `/admin` uses `ADMIN_TOKEN` (falls back to `PROVIDER_TOKEN` if unset).
+- Blacklisted tracks cannot be queued or played in fallback rotation.
 
 ## Architecture Highlights
 
