@@ -1,9 +1,10 @@
 import type { Database } from "bun:sqlite";
 import type { TrackMetadata } from "./types";
-import { addToHistory } from "./db/queries";
+import { addToHistory, getTrackBySourceId } from "./db/queries";
 import { mediasoupHandler } from "./mediasoup";
 import { broadcastNowPlaying } from "./websocket";
-import { popNextTrack } from "./queue";
+import { hasQueuedTracks, popNextTrack } from "./queue";
+import { DOWNLOAD_DIR } from "./config";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -18,6 +19,7 @@ export class Player {
   private running = false;
   private currentTrack: TrackMetadata | null = null;
   private currentProc: ReturnType<typeof Bun.spawn> | null = null;
+  private cachePlaylist = new CachePlaylist();
 
   constructor(db: Database) {
     this.db = db;
@@ -50,6 +52,17 @@ export class Player {
     while (this.running) {
       const next = await popNextTrack(this.db);
       if (!next) {
+        if (hasQueuedTracks()) {
+          await sleep(500);
+          continue;
+        }
+
+        const fallback = await this.getFallbackTrack();
+        if (fallback) {
+          await this.playTrack(fallback, "fallback");
+          continue;
+        }
+
         await sleep(500);
         continue;
       }
@@ -58,7 +71,7 @@ export class Player {
     }
   }
 
-  private async playTrack(track: TrackMetadata): Promise<void> {
+  private async playTrack(track: TrackMetadata, historySource = "manual"): Promise<void> {
     if (!track.file_path) {
       console.error("[player] Track missing file_path", track.id);
       return;
@@ -123,11 +136,71 @@ export class Player {
       console.error(`[player] ffmpeg exited with code ${exitCode}`);
     }
 
-    addToHistory(
-      this.db,
-      track.id,
-      track.requested_by ?? null,
-      "manual"
-    );
+    addToHistory(this.db, track.id, track.requested_by ?? null, historySource);
+  }
+
+  private async getFallbackTrack(): Promise<TrackMetadata | null> {
+    const available = await this.cachePlaylist.ensure();
+    if (available === 0) return null;
+
+    let attempts = available;
+    while (attempts > 0) {
+      attempts -= 1;
+      const sourceId = this.cachePlaylist.take();
+      if (!sourceId) return null;
+
+      const track = getTrackBySourceId(this.db, "youtube", sourceId);
+      if (!track || !track.file_path) continue;
+      if (!(await Bun.file(track.file_path).exists())) continue;
+
+      return {
+        id: track.id,
+        source: track.source,
+        source_id: track.source_id,
+        source_url: track.source_url,
+        title: track.title,
+        uploader: track.uploader,
+        duration_sec: track.duration_sec,
+        file_path: track.file_path,
+        requested_by: null,
+      };
+    }
+
+    return null;
+  }
+}
+
+class CachePlaylist {
+  // AIDEV-NOTE: Fallback playback uses a shuffle bag of cached mp3s only when queue is empty.
+  private bag: string[] = [];
+
+  async ensure(): Promise<number> {
+    if (this.bag.length > 0) return this.bag.length;
+    await this.refill();
+    return this.bag.length;
+  }
+
+  take(): string | null {
+    return this.bag.shift() ?? null;
+  }
+
+  private async refill(): Promise<void> {
+    const ids: string[] = [];
+    for await (const entry of new Bun.Glob(`${DOWNLOAD_DIR}/*.mp3`).scan()) {
+      const filename = entry.split("/").pop();
+      if (!filename) continue;
+      const id = filename.replace(/\.mp3$/, "");
+      if (id) ids.push(id);
+    }
+
+    shuffle(ids);
+    this.bag = ids;
+  }
+}
+
+function shuffle(values: string[]): void {
+  for (let i = values.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [values[i], values[j]] = [values[j], values[i]];
   }
 }

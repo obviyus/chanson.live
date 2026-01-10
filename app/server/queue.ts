@@ -29,6 +29,10 @@ export function getQueueSnapshot(): TrackMetadata[] {
   return queueSnapshot;
 }
 
+export function hasQueuedTracks(): boolean {
+  return queueSnapshot.length > 0;
+}
+
 export function refreshQueue(db: Database): void {
   queueSnapshot = getQueue(db).map((row) => toTrackMetadata(row));
   broadcastQueue(queueSnapshot);
