@@ -91,51 +91,6 @@ export const APP_PAGE_HTML = `<!DOCTYPE html>
       letter-spacing: 0.01em;
     }
 
-    /* VU Meter inspired live indicator */
-    .live-indicator {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 16px;
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-    }
-
-    .vu-bars {
-      display: flex;
-      align-items: flex-end;
-      gap: 3px;
-      height: 20px;
-    }
-
-    .vu-bar {
-      width: 4px;
-      background: var(--accent);
-      border-radius: 1px;
-      animation: vu 0.8s ease-in-out infinite;
-    }
-
-    .vu-bar:nth-child(1) { height: 40%; animation-delay: 0s; }
-    .vu-bar:nth-child(2) { height: 70%; animation-delay: 0.1s; }
-    .vu-bar:nth-child(3) { height: 100%; animation-delay: 0.2s; }
-    .vu-bar:nth-child(4) { height: 60%; animation-delay: 0.15s; }
-    .vu-bar:nth-child(5) { height: 30%; animation-delay: 0.05s; }
-
-    @keyframes vu {
-      0%, 100% { transform: scaleY(1); }
-      50% { transform: scaleY(0.5); }
-    }
-
-    .live-text {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--accent);
-    }
-
     /* Main grid */
     .main-grid {
       display: grid;
@@ -705,16 +660,6 @@ export const APP_PAGE_HTML = `<!DOCTYPE html>
       <div class="brand">
         <h1>chanson.live</h1>
         <p>Shared low-latency radio — one room, one stream, everyone listening together</p>
-      </div>
-      <div class="live-indicator">
-        <div class="vu-bars">
-          <div class="vu-bar"></div>
-          <div class="vu-bar"></div>
-          <div class="vu-bar"></div>
-          <div class="vu-bar"></div>
-          <div class="vu-bar"></div>
-        </div>
-        <span class="live-text">Live</span>
       </div>
     </header>
 
