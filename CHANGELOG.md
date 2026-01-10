@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/obviyus/chanson.live/compare/v1.8.0...v1.9.0) (2026-01-10)
+
+
+### Features
+
+* **admin:** add blacklist and admin ui ([6dd761d](https://github.com/obviyus/chanson.live/commit/6dd761dc4ff492edeffc19df3b9f30917e33da13))
+
 # [1.8.0](https://github.com/obviyus/chanson.live/compare/v1.7.1...v1.8.0) (2026-01-10)
 
 
