@@ -170,12 +170,19 @@ async function handleProviderUpload(req: Request, url: URL): Promise<Response> {
     return json({ error: "invalid source id" }, { status: 400 });
   }
 
-  if (!req.body) {
+  const body = req.body;
+  if (!body) {
     return json({ error: "missing body" }, { status: 400 });
   }
 
   const filePath = join(DOWNLOAD_DIR, `${sourceId}.mp3`);
-  await Bun.write(filePath, new Response(req.body));
+  await Bun.write(filePath, body);
+  const storedSize = (await Bun.file(filePath).stat()).size;
+  if (storedSize === 0) {
+    await Bun.file(filePath).delete();
+    return json({ error: "empty upload" }, { status: 400 });
+  }
+  console.log(`[provider] upload stored ${sourceId}.mp3 (${storedSize} bytes)`);
   updateTrackFileFromUpload(sourceId, filePath);
 
   const queue = getQueue(db);
