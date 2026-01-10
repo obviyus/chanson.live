@@ -1,3 +1,16 @@
+# [1.11.0](https://github.com/obviyus/chanson.live/compare/v1.10.0...v1.11.0) (2026-01-10)
+
+
+### Bug Fixes
+
+* **ui:** prevent grid overflow with minmax constraints ([da4aacc](https://github.com/obviyus/chanson.live/commit/da4aacc038940e44feb9fc2183803733a1c07bc4))
+
+
+### Features
+
+* **ui:** add listener count indicator and fix queue title truncation ([bfbc67e](https://github.com/obviyus/chanson.live/commit/bfbc67e97b4f30d7bab70e5b429cce3cdce59983))
+* **ws:** broadcast queue errors to clients ([5526dd2](https://github.com/obviyus/chanson.live/commit/5526dd2e38d04b30e43e90dd8f60a30cde644cff))
+
 # [1.10.0](https://github.com/obviyus/chanson.live/compare/v1.9.1...v1.10.0) (2026-01-10)
 
 
