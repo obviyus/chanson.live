@@ -34,6 +34,7 @@ let providerReady = false;
 const pendingSourceIds = new Set<string>();
 const pendingByRequest = new Map<string, string>();
 let statusListener: ((status: ProviderStatus) => void) | null = null;
+let errorListener: ((payload: { sourceId: string; message: string }) => void) | null = null;
 // AIDEV-NOTE: Provider upload is streamed over WebSocket; single in-flight upload to avoid interleaving.
 let activeUpload: ProviderUploadState | null = null;
 
@@ -47,6 +48,12 @@ export function setProviderStatusListener(
   listener: (status: ProviderStatus) => void
 ): void {
   statusListener = listener;
+}
+
+export function setProviderErrorListener(
+  listener: (payload: { sourceId: string; message: string }) => void
+): void {
+  errorListener = listener;
 }
 
 export function getProviderStatus(): ProviderStatus {
@@ -175,6 +182,10 @@ export function handleProviderMessage(
         removeFromQueueByTrackId(dbRef, track.id);
         refreshQueue(dbRef);
       }
+      errorListener?.({
+        sourceId: message.source_id,
+        message: message.message,
+      });
       return;
     }
   }

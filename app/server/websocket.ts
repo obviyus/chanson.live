@@ -13,6 +13,7 @@ import {
   handleProviderBinaryChunk,
   handleProviderMessage,
   registerProviderSocket,
+  setProviderErrorListener,
   setProviderStatusListener,
   unregisterProviderSocket,
   type ProviderData,
@@ -76,6 +77,10 @@ function broadcast(message: ServerMessage): void {
 
 function broadcastProviderStatus(status: ProviderStatus): void {
   broadcast(status);
+}
+
+function broadcastQueueError(payload: { sourceId: string; message: string }): void {
+  broadcast({ type: "queue_error", source_id: payload.sourceId, message: payload.message });
 }
 
 /**
@@ -327,3 +332,4 @@ mediasoupHandler.setCallbacks({
 });
 
 setProviderStatusListener(broadcastProviderStatus);
+setProviderErrorListener(broadcastQueueError);

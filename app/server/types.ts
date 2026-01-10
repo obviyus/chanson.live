@@ -44,6 +44,7 @@ export type ServerMessage =
   | { type: "transport_created"; params: TransportParams }
   | { type: "transport_connected" }
   | { type: "consumed"; params: ConsumerResponse }
+  | { type: "queue_error"; source_id: string; message: string }
   | { type: "error"; message: string };
 
 export type ClientMessage =
