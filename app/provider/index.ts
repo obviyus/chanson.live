@@ -6,12 +6,13 @@ const broadcasterUrl = Bun.env.BROADCASTER_URL ?? "";
 const providerToken = Bun.env.PROVIDER_TOKEN ?? "";
 const downloadDir = Bun.env.PROVIDER_DOWNLOAD_DIR ?? "./provider-downloads";
 const audioQuality = Bun.env.AUDIO_QUALITY ?? "5";
-const downloadRetries = Number.isFinite(Number(Bun.env.PROVIDER_DOWNLOAD_RETRIES))
-  ? Number(Bun.env.PROVIDER_DOWNLOAD_RETRIES)
-  : 3;
-const downloadRetryDelayMs = Number.isFinite(Number(Bun.env.PROVIDER_DOWNLOAD_RETRY_DELAY_MS))
-  ? Number(Bun.env.PROVIDER_DOWNLOAD_RETRY_DELAY_MS)
-  : 750;
+const ytDlpRetries = Number.isFinite(Number(Bun.env.PROVIDER_YTDLP_RETRIES))
+  ? Number(Bun.env.PROVIDER_YTDLP_RETRIES)
+  : 5;
+const ytDlpFragmentRetries = Number.isFinite(Number(Bun.env.PROVIDER_YTDLP_FRAGMENT_RETRIES))
+  ? Number(Bun.env.PROVIDER_YTDLP_FRAGMENT_RETRIES)
+  : 10;
+const ytDlpRetrySleep = Bun.env.PROVIDER_YTDLP_RETRY_SLEEP ?? "1";
 
 if (!broadcasterUrl || !providerToken) {
   console.error("BROADCASTER_URL and PROVIDER_TOKEN are required");
@@ -162,55 +163,50 @@ async function fetchYouTubeInfo(url: string): Promise<YouTubeInfo> {
 async function downloadYouTubeAudio(url: string, id: string): Promise<string> {
   const outputTemplate = join(downloadDir, `${id}.%(ext)s`);
   const expectedPath = join(downloadDir, `${id}.mp3`);
-  let lastError: Error | null = null;
+  // AIDEV-NOTE: Delegate retries to yt-dlp; keep only basic output validation here.
+  const proc = Bun.spawn([
+    "yt-dlp",
+    "-x",
+    "--audio-format",
+    "mp3",
+    "--audio-quality",
+    audioQuality,
+    "--retries",
+    String(ytDlpRetries),
+    "--fragment-retries",
+    String(ytDlpFragmentRetries),
+    "--retry-sleep",
+    ytDlpRetrySleep,
+    "--no-playlist",
+    "--no-warnings",
+    "-o",
+    outputTemplate,
+    url,
+  ], {
+    stdout: "pipe",
+    stderr: "pipe",
+  });
 
-  // AIDEV-NOTE: yt-dlp can intermittently return an empty file; retry a few times.
-  for (let attempt = 0; attempt <= downloadRetries; attempt += 1) {
-    if (attempt > 0) {
-      const delayMs = downloadRetryDelayMs * attempt;
-      console.warn(`[provider] retrying download ${id} (${attempt}/${downloadRetries}) after ${delayMs}ms`);
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
-    }
+  const [stdout, stderr] = await Promise.all([
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+  ]);
+  const exitCode = await proc.exited;
 
-    const proc = Bun.spawn([
-      "yt-dlp",
-      "-x",
-      "--audio-format",
-      "mp3",
-      "--audio-quality",
-      audioQuality,
-      "--no-playlist",
-      "--no-warnings",
-      "-o",
-      outputTemplate,
-      url,
-    ], {
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-
-    const [stdout, stderr] = await Promise.all([
-      new Response(proc.stdout).text(),
-      new Response(proc.stderr).text(),
-    ]);
-    const exitCode = await proc.exited;
-
-    if (exitCode !== 0) {
-      lastError = new Error(`yt-dlp download failed (${exitCode}): ${stderr.trim() || stdout.trim()}`);
-    } else {
-      const file = Bun.file(expectedPath);
-      if (!(await file.exists())) {
-        lastError = new Error("yt-dlp finished but output file missing");
-      } else if (file.size === 0) {
-        await file.delete();
-        lastError = new Error("yt-dlp finished but output file was empty");
-      } else {
-        return expectedPath;
-      }
-    }
+  if (exitCode !== 0) {
+    throw new Error(`yt-dlp download failed (${exitCode}): ${stderr.trim() || stdout.trim()}`);
   }
 
-  throw lastError ?? new Error("yt-dlp download failed");
+  const file = Bun.file(expectedPath);
+  if (!(await file.exists())) {
+    throw new Error("yt-dlp finished but output file missing");
+  }
+  if (file.size === 0) {
+    await file.delete();
+    throw new Error("yt-dlp finished but output file was empty");
+  }
+
+  return expectedPath;
 }
 
 async function uploadFileOverWebSocket(sourceId: string, filePath: string): Promise<void> {
