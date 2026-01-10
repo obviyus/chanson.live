@@ -149,7 +149,8 @@ async function handleQueuePost(req: Request): Promise<Response> {
     const track = await handleQueueRequest(db, body.url, body.requested_by ?? null);
     return json({ ok: true, track });
   } catch (error) {
-    return json({ error: error?.message ?? "request failed" }, { status: 400 });
+    const message = error instanceof Error ? error.message : "request failed";
+    return json({ error: message }, { status: 400 });
   }
 }
 
