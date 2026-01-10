@@ -48,7 +48,7 @@ export class Player {
     await mediasoupHandler.initialize();
 
     while (this.running) {
-      const next = popNextTrack(this.db);
+      const next = await popNextTrack(this.db);
       if (!next) {
         await sleep(500);
         continue;

@@ -1,5 +1,5 @@
 import { join } from "path";
-import { DOWNLOAD_DIR } from "./config";
+import { AUDIO_QUALITY, DOWNLOAD_DIR } from "./config";
 
 export interface YouTubeInfo {
   id: string;
@@ -100,9 +100,9 @@ export async function downloadYouTubeAudio(
     "yt-dlp",
     "-x",
     "--audio-format",
-    "opus",
+    "mp3",
     "--audio-quality",
-    "0",
+    AUDIO_QUALITY,
     "--no-playlist",
     "--no-warnings",
     "-o",
@@ -123,7 +123,7 @@ export async function downloadYouTubeAudio(
     throw new Error(`yt-dlp download failed (${exitCode}): ${stderr.trim() || stdout.trim()}`);
   }
 
-  const expectedPath = join(DOWNLOAD_DIR, `${id}.opus`);
+  const expectedPath = join(DOWNLOAD_DIR, `${id}.mp3`);
   if (!(await Bun.file(expectedPath).exists())) {
     throw new Error("yt-dlp finished but output file missing");
   }

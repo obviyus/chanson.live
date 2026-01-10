@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 import type { QueueItem, Track } from "./db/schema";
 import type { TrackMetadata } from "./types";
-import { addToQueue, getQueue, popQueue } from "./db/queries";
+import { addToQueue, getQueue, peekQueue, removeFromQueue } from "./db/queries";
 import { broadcastQueue } from "./websocket";
 
 let queueSnapshot: TrackMetadata[] = [];
@@ -29,6 +29,11 @@ export function getQueueSnapshot(): TrackMetadata[] {
   return queueSnapshot;
 }
 
+export function refreshQueue(db: Database): void {
+  queueSnapshot = getQueue(db).map((row) => toTrackMetadata(row));
+  broadcastQueue(queueSnapshot);
+}
+
 export function enqueueTrack(
   db: Database,
   track: Track,
@@ -39,9 +44,16 @@ export function enqueueTrack(
   broadcastQueue(queueSnapshot);
 }
 
-export function popNextTrack(db: Database): TrackMetadata | null {
-  const next = popQueue(db);
+export async function popNextTrack(db: Database): Promise<TrackMetadata | null> {
+  const next = peekQueue(db);
+  if (!next) return null;
+
+  if (!next.file_path) return null;
+  const file = Bun.file(next.file_path);
+  if (!(await file.exists())) return null;
+
+  removeFromQueue(db, next.id);
   queueSnapshot = getQueue(db).map((row) => toTrackMetadata(row));
   broadcastQueue(queueSnapshot);
-  return next ? toTrackMetadata(next) : null;
+  return toTrackMetadata(next);
 }

@@ -11,7 +11,7 @@ import {
   downloadYouTubeAudio,
 } from "./youtube";
 
-export async function ensureTrackFromYouTubeUrl(
+export async function ensureLocalTrackFromYouTubeUrl(
   db: Database,
   inputUrl: string
 ): Promise<Track> {
