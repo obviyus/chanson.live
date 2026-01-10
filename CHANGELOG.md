@@ -1,3 +1,10 @@
+# [1.13.0](https://github.com/obviyus/chanson.live/compare/v1.12.0...v1.13.0) (2026-01-10)
+
+
+### Features
+
+* **download:** delegate download retries to yt-dlp with configurable parameters ([1082c78](https://github.com/obviyus/chanson.live/commit/1082c789eaf9954ef3ff6c1681fc4f296f9cada8))
+
 # [1.12.0](https://github.com/obviyus/chanson.live/compare/v1.11.0...v1.12.0) (2026-01-10)
 
 
