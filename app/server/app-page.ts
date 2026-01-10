@@ -91,6 +91,62 @@ export const APP_PAGE_HTML = `<!DOCTYPE html>
       border-color: var(--border-accent);
     }
 
+    /* Listener count indicator */
+    .listener-count {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-tertiary);
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      opacity: 0;
+      transform: translateY(-4px);
+      transition: opacity 0.3s ease, transform 0.3s ease, color 0.2s ease, border-color 0.2s ease;
+      pointer-events: none;
+    }
+
+    .listener-count.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .listener-count.active {
+      color: var(--text-secondary);
+      border-color: var(--border-accent);
+    }
+
+    .listener-count svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+      opacity: 0.7;
+    }
+
+    .listener-count.active svg {
+      opacity: 1;
+      fill: var(--accent);
+    }
+
+    .listener-count-number {
+      min-width: 1ch;
+      text-align: center;
+    }
+
+    .listener-count.updated .listener-count-number {
+      animation: countPulse 0.4s ease;
+    }
+
+    @keyframes countPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.2); color: var(--accent); }
+      100% { transform: scale(1); }
+    }
+
     .brand {
       display: flex;
       flex-direction: column;
@@ -489,6 +545,7 @@ export const APP_PAGE_HTML = `<!DOCTYPE html>
       flex-direction: column;
       gap: 4px;
       min-width: 0;
+      overflow: hidden;
     }
 
     .queue-item-title {
@@ -683,6 +740,10 @@ export const APP_PAGE_HTML = `<!DOCTYPE html>
         <p>Shared low-latency radio — one room, one stream, everyone listening together</p>
       </div>
       <div class="header-actions">
+        <div class="listener-count" id="listenerCount" title="Listeners tuned in">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1c-4.97 0-9 4.03-9 9v7c0 1.66 1.34 3 3 3h3v-8H5v-2c0-3.87 3.13-7 7-7s7 3.13 7 7v2h-4v8h3c1.66 0 3-1.34 3-3v-7c0-4.97-4.03-9-9-9z"/></svg>
+          <span class="listener-count-number" id="listenerNumber">0</span>
+        </div>
         <a class="header-link" href="/admin">Admin</a>
       </div>
     </header>
@@ -775,6 +836,8 @@ export const APP_PAGE_HTML = `<!DOCTYPE html>
     const playerTextEl = document.getElementById('playerText');
     const volumeBtn = document.getElementById('volumeBtn');
     const volumeSlider = document.getElementById('volumeSlider');
+    const listenerCountEl = document.getElementById('listenerCount');
+    const listenerNumberEl = document.getElementById('listenerNumber');
 
     // State
     let ws = null;
@@ -997,6 +1060,33 @@ export const APP_PAGE_HTML = `<!DOCTYPE html>
       }
     }
 
+    function updateListenerCount(count) {
+      const prev = parseInt(listenerNumberEl.textContent, 10) || 0;
+      listenerNumberEl.textContent = count;
+
+      // Show indicator when connected
+      listenerCountEl.classList.add('visible');
+
+      // Active state when there are listeners
+      if (count > 0) {
+        listenerCountEl.classList.add('active');
+      } else {
+        listenerCountEl.classList.remove('active');
+      }
+
+      // Pulse animation when count changes
+      if (prev !== count) {
+        listenerCountEl.classList.remove('updated');
+        void listenerCountEl.offsetWidth; // Force reflow
+        listenerCountEl.classList.add('updated');
+      }
+    }
+
+    function hideListenerCount() {
+      listenerCountEl.classList.remove('visible', 'active', 'updated');
+      listenerNumberEl.textContent = '0';
+    }
+
     async function connect() {
       if (ws) return;
       await configPromise;
@@ -1015,6 +1105,7 @@ export const APP_PAGE_HTML = `<!DOCTYPE html>
         writeLog('WebSocket disconnected');
         setStatus('Disconnected', false);
         stopVisualization();
+        hideListenerCount();
         playerTextEl.textContent = 'Disconnected';
         ws = null;
         device = null;
@@ -1027,7 +1118,7 @@ export const APP_PAGE_HTML = `<!DOCTYPE html>
         const msg = JSON.parse(event.data);
         switch (msg.type) {
           case 'client_count':
-            writeLog('Listeners: ' + msg.count);
+            updateListenerCount(msg.count);
             break;
           case 'rtp_capabilities':
             device = new mediasoupClient.Device();
@@ -1093,6 +1184,9 @@ export const APP_PAGE_HTML = `<!DOCTYPE html>
             break;
           case 'queue_update':
             renderQueue(msg.queue ?? []);
+            break;
+          case 'queue_error':
+            writeLog('Queue error for ' + msg.source_id + ': ' + msg.message, true);
             break;
           case 'error':
             writeLog(msg.message, true);
