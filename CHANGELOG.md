@@ -1,3 +1,12 @@
+## [1.6.1](https://github.com/obviyus/chanson.live/compare/v1.6.0...v1.6.1) (2026-01-10)
+
+
+### Bug Fixes
+
+* **provider:** use URL API for proper path construction ([65016e8](https://github.com/obviyus/chanson.live/commit/65016e8fdefedbada651952da9e8f4150065ee01))
+* **server:** validate upload body and reject empty files ([e0f82de](https://github.com/obviyus/chanson.live/commit/e0f82de3451f940e95f7d7aeca28c9f35afe4442))
+* **server:** wrap body in Response for Bun.write compatibility ([0422864](https://github.com/obviyus/chanson.live/commit/0422864eeda68bbbe57fb3e7dac256ab7e54da4c))
+
 # [1.6.0](https://github.com/obviyus/chanson.live/compare/v1.5.0...v1.6.0) (2026-01-10)
 
 
