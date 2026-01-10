@@ -1,3 +1,17 @@
+# [1.6.0](https://github.com/obviyus/chanson.live/compare/v1.5.0...v1.6.0) (2026-01-10)
+
+
+### Features
+
+* **config:** add provider mode and cache settings ([be18c7a](https://github.com/obviyus/chanson.live/commit/be18c7a473de09e342cbe09ff97c68903ba5ac48))
+* **db:** add queries for external provider support ([6d9306b](https://github.com/obviyus/chanson.live/commit/6d9306b2cef35c1dc13768048022d79f49855bf5))
+* **docker:** add provider service and env vars to compose ([df0c663](https://github.com/obviyus/chanson.live/commit/df0c6630580409b30d4f288a4998e517c26e70c9))
+* **provider:** add external provider architecture ([591b5a8](https://github.com/obviyus/chanson.live/commit/591b5a8491954b49c1bc6af210197cde31cd543d))
+* **provider:** add external provider client application ([9097f9e](https://github.com/obviyus/chanson.live/commit/9097f9ed152388df0bc15326e0fba0fee06d0eb9))
+* **server:** integrate provider WebSocket and upload endpoints ([65cfafb](https://github.com/obviyus/chanson.live/commit/65cfafb67e1440f39ac74ed5f4c24d91d0e6623c))
+* **types:** add provider message and status types ([28c75f6](https://github.com/obviyus/chanson.live/commit/28c75f61c32a7ddba7bba733b1f27319a342af4f))
+* **ui:** show provider status and disable input when offline ([8837ca0](https://github.com/obviyus/chanson.live/commit/8837ca02a24148b2d61694cfe6167eb873b6531e))
+
 # [1.5.0](https://github.com/obviyus/chanson.live/compare/v1.4.0...v1.5.0) (2026-01-10)
 
 
