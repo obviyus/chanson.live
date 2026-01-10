@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import type { TrackMetadata } from "./types";
-import { addToHistory, getTrackBySourceId } from "./db/queries";
+import { addToHistory, getTrackBySourceId, isBlacklisted } from "./db/queries";
 import { mediasoupHandler } from "./mediasoup";
 import { broadcastNowPlaying } from "./websocket";
 import { hasQueuedTracks, popNextTrack } from "./queue";
@@ -148,6 +148,8 @@ export class Player {
       attempts -= 1;
       const sourceId = this.cachePlaylist.take();
       if (!sourceId) return null;
+
+      if (isBlacklisted(this.db, "youtube", sourceId)) continue;
 
       const track = getTrackBySourceId(this.db, "youtube", sourceId);
       if (!track || !track.file_path) continue;

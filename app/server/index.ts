@@ -5,19 +5,28 @@ import {
   DB_PATH,
   DOWNLOAD_DIR,
   PORT,
+  ADMIN_TOKEN,
   PROVIDER_TOKEN,
   STUN_URLS,
 } from "./config";
 import { websocketHandler, upgradeToWebSocket, createClientData } from "./websocket";
-import { initQueue, getQueueSnapshot } from "./queue";
+import { initQueue, getQueueSnapshot, refreshQueue } from "./queue";
 import { handleQueueRequest } from "./requests";
 import { Player } from "./player";
 import { TEST_PAGE_HTML } from "./test-page";
 import { APP_PAGE_HTML } from "./app-page";
 import { initProvider, getProviderStatus, updateTrackFileFromUpload } from "./provider";
 import { pruneDownloads } from "./cache";
-import { getQueue } from "./db/queries";
+import {
+  getQueue,
+  getBlacklist,
+  insertBlacklist,
+  removeBlacklist,
+  removeFromQueueBySourceId,
+} from "./db/queries";
 import { join } from "path";
+import { normalizeYouTubeUrl } from "./youtube";
+import { ADMIN_PAGE_HTML } from "./admin-page";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -88,6 +97,12 @@ const server = Bun.serve({
       });
     }
 
+    if (url.pathname === "/admin") {
+      return new Response(ADMIN_PAGE_HTML, {
+        headers: { "Content-Type": "text/html", ...corsHeaders },
+      });
+    }
+
     if (url.pathname === "/test") {
       return new Response(TEST_PAGE_HTML, {
         headers: { "Content-Type": "text/html", ...corsHeaders },
@@ -111,6 +126,35 @@ const server = Bun.serve({
       });
     }
 
+    if (url.pathname === "/api/admin/blacklist" && req.method === "GET") {
+      if (!isAdminAuthorized(req, url)) {
+        return json({ error: "unauthorized" }, { status: 401 });
+      }
+      return json({ blacklist: getBlacklist(db) });
+    }
+
+    if (url.pathname === "/api/admin/blacklist" && req.method === "POST") {
+      if (!isAdminAuthorized(req, url)) {
+        return json({ error: "unauthorized" }, { status: 401 });
+      }
+      return handleBlacklistPost(req).catch((error) => {
+        console.error("[api] /api/admin/blacklist error", error);
+        return json({ error: error?.message ?? "internal error" }, { status: 500 });
+      });
+    }
+
+    if (url.pathname.startsWith("/api/admin/blacklist/") && req.method === "DELETE") {
+      if (!isAdminAuthorized(req, url)) {
+        return json({ error: "unauthorized" }, { status: 401 });
+      }
+      const sourceId = url.pathname.split("/").pop();
+      if (!sourceId) {
+        return json({ error: "missing source id" }, { status: 400 });
+      }
+      removeBlacklist(db, "youtube", sourceId);
+      return json({ ok: true });
+    }
+
     if (url.pathname === "/api/now-playing" && req.method === "GET") {
       return json({ now_playing: player.getNowPlaying() });
     }
@@ -127,7 +171,7 @@ const server = Bun.serve({
       });
     }
 
-    return new Response("Not Found", { status: 404 });
+  return new Response("Not Found", { status: 404 });
   },
   websocket: websocketHandler,
 });
@@ -195,6 +239,55 @@ async function handleProviderUpload(req: Request, url: URL): Promise<Response> {
   await pruneDownloads(db, CACHE_MAX_BYTES, protectedIds);
 
   return json({ ok: true });
+}
+
+function isAdminAuthorized(req: Request, url: URL): boolean {
+  if (!ADMIN_TOKEN) return false;
+  const auth = req.headers.get("authorization") ?? "";
+  if (auth.startsWith("Bearer ")) {
+    return auth.slice(7) === ADMIN_TOKEN;
+  }
+  const token = url.searchParams.get("token");
+  return token === ADMIN_TOKEN;
+}
+
+async function handleBlacklistPost(req: Request): Promise<Response> {
+  let body: { url?: string; source_id?: string; reason?: string };
+  try {
+    body = (await req.json()) as { url?: string; source_id?: string; reason?: string };
+  } catch {
+    return json({ error: "invalid json" }, { status: 400 });
+  }
+
+  let sourceId = body.source_id?.trim();
+  let sourceUrl = body.url?.trim() ?? null;
+
+  if (sourceUrl) {
+    const normalized = normalizeYouTubeUrl(sourceUrl);
+    if (!normalized) return json({ error: "invalid youtube url" }, { status: 400 });
+    sourceId = normalized.id;
+    sourceUrl = normalized.url;
+  }
+
+  if (!sourceId) {
+    return json({ error: "source_id or url required" }, { status: 400 });
+  }
+
+  if (!/^[a-zA-Z0-9_-]{11}$/.test(sourceId)) {
+    return json({ error: "invalid source id" }, { status: 400 });
+  }
+
+  const entry = insertBlacklist(db, {
+    source: "youtube",
+    source_id: sourceId,
+    source_url: sourceUrl,
+    reason: body.reason?.trim() ?? null,
+  });
+
+  removeFromQueueBySourceId(db, "youtube", sourceId);
+  refreshQueue(db);
+
+  return json({ ok: true, entry });
 }
 
 function buildIceServers(): Array<{

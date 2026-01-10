@@ -40,10 +40,21 @@ export function initDatabase(path: string): Database {
       create_time DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE TABLE IF NOT EXISTS blacklist (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      source TEXT NOT NULL,
+      source_id TEXT NOT NULL,
+      source_url TEXT,
+      reason TEXT,
+      create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(source, source_id)
+    );
+
     CREATE INDEX IF NOT EXISTS idx_tracks_source_id ON tracks(source, source_id);
     CREATE INDEX IF NOT EXISTS idx_queue_position ON queue(position);
     CREATE INDEX IF NOT EXISTS idx_history_track_id ON play_history(track_id);
     CREATE INDEX IF NOT EXISTS idx_history_create_time ON play_history(create_time);
+    CREATE INDEX IF NOT EXISTS idx_blacklist_source_id ON blacklist(source, source_id);
   `);
 
   return db;
@@ -74,5 +85,14 @@ export interface PlayHistory {
   track_id: number;
   requested_by: string | null;
   source: string;
+  create_time: string;
+}
+
+export interface BlacklistedSource {
+  id: number;
+  source: string;
+  source_id: string;
+  source_url: string | null;
+  reason: string | null;
   create_time: string;
 }

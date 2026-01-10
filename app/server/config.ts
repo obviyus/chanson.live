@@ -24,6 +24,7 @@ export const STUN_URLS =
 
 export const PROVIDER_MODE = (Bun.env.PROVIDER_MODE ?? "local").toLowerCase();
 export const PROVIDER_TOKEN = Bun.env.PROVIDER_TOKEN ?? "";
+export const ADMIN_TOKEN = Bun.env.ADMIN_TOKEN ?? PROVIDER_TOKEN;
 
 export const AUDIO_QUALITY = Bun.env.AUDIO_QUALITY ?? "5";
 

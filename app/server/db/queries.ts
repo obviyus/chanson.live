@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { Track, QueueItem } from "./schema";
+import type { Track, QueueItem, BlacklistedSource } from "./schema";
 
 /**
  * AIDEV-NOTE: Queries use prepared statements via db.query() for safety and performance.
@@ -183,4 +183,76 @@ export function addToHistory(
     VALUES (?, ?, ?)
   `
   ).run(trackId, requestedBy, source);
+}
+
+export function getBlacklist(db: Database): BlacklistedSource[] {
+  return db
+    .query<BlacklistedSource, []>(
+      "SELECT * FROM blacklist ORDER BY create_time DESC"
+    )
+    .all();
+}
+
+export function isBlacklisted(
+  db: Database,
+  source: string,
+  sourceId: string
+): boolean {
+  const row = db
+    .query<{ count: number }, [string, string]>(
+      "SELECT COUNT(*) as count FROM blacklist WHERE source = ? AND source_id = ?"
+    )
+    .get(source, sourceId);
+  return (row?.count ?? 0) > 0;
+}
+
+export function insertBlacklist(
+  db: Database,
+  data: {
+    source: string;
+    source_id: string;
+    source_url: string | null;
+    reason: string | null;
+  }
+): BlacklistedSource {
+  return db
+    .query<
+      BlacklistedSource,
+      [string, string, string | null, string | null]
+    >(
+      `
+    INSERT INTO blacklist (source, source_id, source_url, reason)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(source, source_id)
+    DO UPDATE SET source_url = excluded.source_url, reason = excluded.reason
+    RETURNING *
+  `
+    )
+    .get(data.source, data.source_id, data.source_url, data.reason)!;
+}
+
+export function removeBlacklist(
+  db: Database,
+  source: string,
+  sourceId: string
+): void {
+  db.query("DELETE FROM blacklist WHERE source = ? AND source_id = ?").run(
+    source,
+    sourceId
+  );
+}
+
+export function removeFromQueueBySourceId(
+  db: Database,
+  source: string,
+  sourceId: string
+): void {
+  db.query(
+    `
+    DELETE FROM queue
+    WHERE track_id IN (
+      SELECT id FROM tracks WHERE source = ? AND source_id = ?
+    )
+  `
+  ).run(source, sourceId);
 }

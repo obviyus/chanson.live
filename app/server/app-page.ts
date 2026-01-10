@@ -70,6 +70,27 @@ export const APP_PAGE_HTML = `<!DOCTYPE html>
       border-bottom: 1px solid var(--border);
     }
 
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .header-link {
+      font-size: 12px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 12px;
+      transition: border-color 0.2s ease, color 0.2s ease;
+    }
+
+    .header-link:hover {
+      color: var(--text-primary);
+      border-color: var(--border-accent);
+    }
+
     .brand {
       display: flex;
       flex-direction: column;
@@ -660,6 +681,9 @@ export const APP_PAGE_HTML = `<!DOCTYPE html>
       <div class="brand">
         <h1>chanson.live</h1>
         <p>Shared low-latency radio — one room, one stream, everyone listening together</p>
+      </div>
+      <div class="header-actions">
+        <a class="header-link" href="/admin">Admin</a>
       </div>
     </header>
 

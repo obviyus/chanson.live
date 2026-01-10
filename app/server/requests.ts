@@ -5,6 +5,7 @@ import { enqueueTrack } from "./queue";
 import {
   getTrackBySourceId,
   insertTrack,
+  isBlacklisted,
   updateTrackFilePathBySourceId,
 } from "./db/queries";
 import { normalizeYouTubeUrl } from "./youtube";
@@ -18,15 +19,19 @@ export async function handleQueueRequest(
   inputUrl: string,
   requestedBy: string | null
 ) {
-  if (PROVIDER_MODE !== "external") {
-    const track = await ensureLocalTrackFromYouTubeUrl(db, inputUrl);
-    enqueueTrack(db, track, requestedBy);
-    return track;
-  }
-
   const normalized = normalizeYouTubeUrl(inputUrl);
   if (!normalized) {
     throw new Error("Invalid YouTube URL");
+  }
+
+  if (isBlacklisted(db, "youtube", normalized.id)) {
+    throw new Error("This track is blacklisted");
+  }
+
+  if (PROVIDER_MODE !== "external") {
+    const track = await ensureLocalTrackFromYouTubeUrl(db, normalized.url);
+    enqueueTrack(db, track, requestedBy);
+    return track;
   }
 
   const sourceId = normalized.id;
