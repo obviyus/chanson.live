@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/obviyus/chanson.live/compare/v1.11.0...v1.12.0) (2026-01-10)
+
+
+### Features
+
+* **download:** implement retry logic for yt-dlp downloads with configurable retries and delay ([03d96ec](https://github.com/obviyus/chanson.live/commit/03d96ec293eb2651e54186dc7d82ffcf72e216c6))
+
 # [1.11.0](https://github.com/obviyus/chanson.live/compare/v1.10.0...v1.11.0) (2026-01-10)
 
 
