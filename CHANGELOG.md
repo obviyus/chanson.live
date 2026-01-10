@@ -1,3 +1,16 @@
+# [1.7.0](https://github.com/obviyus/chanson.live/compare/v1.6.1...v1.7.0) (2026-01-10)
+
+
+### Bug Fixes
+
+* **db:** sync type exports with schema ([236eec5](https://github.com/obviyus/chanson.live/commit/236eec5972fb53067ffd5d46c43ed2370638af24))
+* **server:** use instanceof for proper error type narrowing ([1b53683](https://github.com/obviyus/chanson.live/commit/1b5368326ad56c45140c76087722567dbe497a51))
+
+
+### Features
+
+* **provider:** stream file uploads over WebSocket ([9c8bf45](https://github.com/obviyus/chanson.live/commit/9c8bf456d680905f8c195aa6e730e4ac687a105c))
+
 ## [1.6.1](https://github.com/obviyus/chanson.live/compare/v1.6.0...v1.6.1) (2026-01-10)
 
 
