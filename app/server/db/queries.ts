@@ -17,6 +17,20 @@ export function getTrackBySourceId(
     .get(source, sourceId);
 }
 
+export function getTracksBySourceIds(
+  db: Database,
+  source: string,
+  sourceIds: string[]
+): Track[] {
+  if (sourceIds.length === 0) return [];
+  const placeholders = sourceIds.map(() => "?").join(", ");
+  return db
+    .query<Track, [string, ...string[]]>(
+      `SELECT * FROM tracks WHERE source = ? AND source_id IN (${placeholders})`
+    )
+    .all(source, ...sourceIds);
+}
+
 export function insertTrack(
   db: Database,
   track: Omit<Track, "id" | "create_time">

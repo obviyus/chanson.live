@@ -158,6 +158,8 @@ export const ADMIN_PAGE_HTML = `<!DOCTYPE html>
 
     .actions { display: flex; gap: 8px; }
 
+    .row-actions { display: flex; gap: 8px; }
+
     @media (max-width: 900px) {
       .grid { grid-template-columns: 1fr; }
     }
@@ -210,6 +212,13 @@ export const ADMIN_PAGE_HTML = `<!DOCTYPE html>
         <div id="blacklist" class="stack"></div>
       </section>
     </div>
+
+    <div class="grid" style="margin-top: 24px;">
+      <section class="card">
+        <h2>Rotation pool</h2>
+        <div id="cache" class="stack"></div>
+      </section>
+    </div>
   </div>
 
   <script>
@@ -223,6 +232,7 @@ export const ADMIN_PAGE_HTML = `<!DOCTYPE html>
     const blacklistReason = document.getElementById('blacklistReason');
     const blacklistAdd = document.getElementById('blacklistAdd');
     const blacklistStatus = document.getElementById('blacklistStatus');
+    const cacheEl = document.getElementById('cache');
 
     const storageKey = 'chanson-admin-token';
 
@@ -302,6 +312,76 @@ export const ADMIN_PAGE_HTML = `<!DOCTYPE html>
       });
     }
 
+    function formatBytes(bytes) {
+      if (!Number.isFinite(bytes)) return '0 B';
+      const units = ['B', 'KB', 'MB', 'GB'];
+      let size = bytes;
+      let unit = 0;
+      while (size >= 1024 && unit < units.length - 1) {
+        size /= 1024;
+        unit += 1;
+      }
+      return size.toFixed(size >= 10 || unit === 0 ? 0 : 1) + ' ' + units[unit];
+    }
+
+    function formatAge(ms) {
+      if (!Number.isFinite(ms)) return 'unknown';
+      const minutes = Math.floor(ms / 60000);
+      if (minutes < 60) return minutes + 'm ago';
+      const hours = Math.floor(minutes / 60);
+      if (hours < 48) return hours + 'h ago';
+      const days = Math.floor(hours / 24);
+      return days + 'd ago';
+    }
+
+    function renderCache(items) {
+      cacheEl.innerHTML = '';
+      if (!items.length) {
+        cacheEl.innerHTML = '<div class="notice">No cached tracks.</div>';
+        return;
+      }
+
+      items.forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'row';
+
+        const info = document.createElement('div');
+        const title = item.title && item.title !== 'Unknown' ? item.title : item.source_id;
+        const age = formatAge(Date.now() - item.mtime_ms);
+        const size = formatBytes(item.size_bytes || 0);
+        const detail =
+          (item.uploader ? item.uploader + ' · ' : '') +
+          item.source_id +
+          ' · ' +
+          size +
+          ' · ' +
+          age;
+        info.innerHTML =
+          '<div class="title">' +
+          title +
+          '</div>' +
+          '<div class="meta">' +
+          detail +
+          '</div>';
+
+        const action = document.createElement('button');
+        action.className = item.blacklisted ? 'btn secondary small' : 'btn small';
+        action.textContent = item.blacklisted ? 'Allow' : 'Blacklist';
+        action.addEventListener('click', async () => {
+          if (item.blacklisted) {
+            await removeBlacklist(item.source_id);
+          } else {
+            blacklistInput.value = item.source_url || item.source_id;
+            await addBlacklist();
+          }
+        });
+
+        row.appendChild(info);
+        row.appendChild(action);
+        cacheEl.appendChild(row);
+      });
+    }
+
     async function loadQueue() {
       const res = await fetch('/api/queue');
       const data = await res.json();
@@ -318,6 +398,16 @@ export const ADMIN_PAGE_HTML = `<!DOCTYPE html>
       const data = await res.json();
       renderBlacklist(data.blacklist || []);
       setStatus(authStatus, 'Connected');
+    }
+
+    async function loadCache() {
+      const res = await fetch('/api/admin/cache', { headers: authHeaders() });
+      if (!res.ok) {
+        cacheEl.innerHTML = '<div class="notice">Unauthorized</div>';
+        return;
+      }
+      const data = await res.json();
+      renderCache(data.items || []);
     }
 
     async function blacklistSource(item) {
@@ -347,6 +437,7 @@ export const ADMIN_PAGE_HTML = `<!DOCTYPE html>
       setStatus(blacklistStatus, 'Blacklisted');
       await loadQueue();
       await loadBlacklist();
+      await loadCache();
     }
 
     async function removeBlacklist(sourceId) {
@@ -362,22 +453,26 @@ export const ADMIN_PAGE_HTML = `<!DOCTYPE html>
 
       setStatus(blacklistStatus, 'Removed');
       await loadBlacklist();
+      await loadCache();
     }
 
     saveToken.addEventListener('click', async () => {
       localStorage.setItem(storageKey, tokenInput.value.trim());
       await loadBlacklist();
+      await loadCache();
     });
 
     refreshBtn.addEventListener('click', async () => {
       await loadQueue();
       await loadBlacklist();
+      await loadCache();
     });
 
     blacklistAdd.addEventListener('click', addBlacklist);
 
     loadQueue();
     loadBlacklist();
+    loadCache();
   </script>
 </body>
 </html>`;

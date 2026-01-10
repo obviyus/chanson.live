@@ -23,6 +23,7 @@ import {
   insertBlacklist,
   removeBlacklist,
   removeFromQueueBySourceId,
+  getTracksBySourceIds,
 } from "./db/queries";
 import { join } from "path";
 import { normalizeYouTubeUrl } from "./youtube";
@@ -131,6 +132,16 @@ const server = Bun.serve({
         return json({ error: "unauthorized" }, { status: 401 });
       }
       return json({ blacklist: getBlacklist(db) });
+    }
+
+    if (url.pathname === "/api/admin/cache" && req.method === "GET") {
+      if (!isAdminAuthorized(req, url)) {
+        return json({ error: "unauthorized" }, { status: 401 });
+      }
+      return handleCacheGet().catch((error) => {
+        console.error("[api] /api/admin/cache error", error);
+        return json({ error: error?.message ?? "internal error" }, { status: 500 });
+      });
     }
 
     if (url.pathname === "/api/admin/blacklist" && req.method === "POST") {
@@ -288,6 +299,44 @@ async function handleBlacklistPost(req: Request): Promise<Response> {
   refreshQueue(db);
 
   return json({ ok: true, entry });
+}
+
+async function handleCacheGet(): Promise<Response> {
+  const entries: Array<{ source_id: string; mtime_ms: number; size_bytes: number }> = [];
+  for await (const entry of new Bun.Glob(`${DOWNLOAD_DIR}/*.mp3`).scan()) {
+    const filename = entry.split("/").pop();
+    if (!filename) continue;
+    const sourceId = filename.replace(/\.mp3$/, "");
+    if (!/^[a-zA-Z0-9_-]{11}$/.test(sourceId)) continue;
+    const stat = await Bun.file(entry).stat();
+    entries.push({ source_id: sourceId, mtime_ms: stat.mtimeMs, size_bytes: stat.size });
+  }
+
+  const sourceIds = entries.map((entry) => entry.source_id);
+  const tracks = getTracksBySourceIds(db, "youtube", sourceIds);
+  const trackById = new Map<string, typeof tracks[number]>();
+  for (const track of tracks) trackById.set(track.source_id, track);
+
+  const blacklist = getBlacklist(db);
+  const blacklistSet = new Set(blacklist.map((item) => item.source_id));
+
+  const items = entries
+    .map((entry) => {
+      const track = trackById.get(entry.source_id);
+      return {
+        source_id: entry.source_id,
+        source_url: track?.source_url ?? null,
+        title: track?.title ?? "Unknown",
+        uploader: track?.uploader ?? null,
+        duration_sec: track?.duration_sec ?? null,
+        mtime_ms: entry.mtime_ms,
+        size_bytes: entry.size_bytes,
+        blacklisted: blacklistSet.has(entry.source_id),
+      };
+    })
+    .sort((a, b) => b.mtime_ms - a.mtime_ms);
+
+  return json({ items });
 }
 
 function buildIceServers(): Array<{
