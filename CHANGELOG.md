@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/obviyus/chanson.live/compare/v1.3.0...v1.4.0) (2026-01-10)
+
+
+### Features
+
+* **docker:** install Node 22 + build deps + python ([c15d210](https://github.com/obviyus/chanson.live/commit/c15d2108e4c4312b5222e63bd38caaf8c2821935))
+
 # [1.3.0](https://github.com/obviyus/chanson.live/compare/v1.2.1...v1.3.0) (2026-01-10)
 
 
