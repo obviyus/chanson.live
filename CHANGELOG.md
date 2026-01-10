@@ -1,3 +1,10 @@
+## [1.9.1](https://github.com/obviyus/chanson.live/compare/v1.9.0...v1.9.1) (2026-01-10)
+
+
+### Bug Fixes
+
+* **auth:** ignore empty admin token ([14b57be](https://github.com/obviyus/chanson.live/commit/14b57be26f36f0270c66305782346fec8bd3f5f8))
+
 # [1.9.0](https://github.com/obviyus/chanson.live/compare/v1.8.0...v1.9.0) (2026-01-10)
 
 
