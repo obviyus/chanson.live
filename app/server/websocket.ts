@@ -30,6 +30,8 @@ interface ClientData {
   connectedAt: number;
 }
 
+type AnySocket = ServerWebSocket<ClientData> | ServerWebSocket<ProviderData>;
+
 // Track all connected clients
 const clients = new Map<string, ServerWebSocket<ClientData>>();
 
@@ -47,15 +49,11 @@ export function createClientData(): ClientData {
   return { role: "client", id: generateClientId(), connectedAt: Date.now() };
 }
 
-function isProviderSocket(
-  ws: ServerWebSocket<ClientData | ProviderData>
-): ws is ServerWebSocket<ProviderData> {
+function isProviderSocket(ws: AnySocket): ws is ServerWebSocket<ProviderData> {
   return ws.data.role === "provider";
 }
 
-function isClientSocket(
-  ws: ServerWebSocket<ClientData | ProviderData>
-): ws is ServerWebSocket<ClientData> {
+function isClientSocket(ws: AnySocket): ws is ServerWebSocket<ClientData> {
   return ws.data.role === "client";
 }
 
@@ -214,7 +212,7 @@ async function handleMessage(
  * WebSocket handler configuration for Bun.serve.
  */
 export const websocketHandler = {
-  open(ws: ServerWebSocket<ClientData | ProviderData>) {
+  open(ws: AnySocket) {
     if (isProviderSocket(ws)) {
       registerProviderSocket(ws);
       return;
@@ -248,7 +246,7 @@ export const websocketHandler = {
     send(ws, getProviderStatus());
   },
 
-  message(ws: ServerWebSocket<ClientData | ProviderData>, message: string | ArrayBuffer | Uint8Array) {
+  message(ws: AnySocket, message: string | ArrayBuffer | Uint8Array) {
     if (isProviderSocket(ws) && typeof message !== "string") {
       handleProviderBinaryChunk(ws, message);
       return;
@@ -278,7 +276,7 @@ export const websocketHandler = {
     }
   },
 
-  close(ws: ServerWebSocket<ClientData | ProviderData>) {
+  close(ws: AnySocket) {
     if (isProviderSocket(ws)) {
       unregisterProviderSocket(ws);
       return;
@@ -294,7 +292,7 @@ export const websocketHandler = {
     broadcastClientCount();
   },
 
-  error(ws: ServerWebSocket<ClientData | ProviderData>, error: Error) {
+  error(ws: AnySocket, error: Error) {
     if (isProviderSocket(ws)) {
       console.error(`[ws] Provider error:`, error);
       return;
