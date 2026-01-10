@@ -1,0 +1,16 @@
+services:
+  chanson:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    network_mode: host
+    environment:
+      PORT: "3000"
+      MEDIASOUP_ANNOUNCED_IP: ""
+      MEDIASOUP_LISTEN_IP: "0.0.0.0"
+      RTC_MIN_PORT: "10000"
+      RTC_MAX_PORT: "20000"
+      STUN_URLS: "stun:stun.l.google.com:19302"
+    volumes:
+      - ./data:/app/data
+      - ./downloads:/app/downloads
