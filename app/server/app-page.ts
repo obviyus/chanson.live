@@ -171,7 +171,7 @@ export const APP_PAGE_HTML = `<!DOCTYPE html>
     /* Main grid */
     .main-grid {
       display: grid;
-      grid-template-columns: 1.5fr 1fr;
+      grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
       gap: 24px;
     }
 
@@ -182,6 +182,7 @@ export const APP_PAGE_HTML = `<!DOCTYPE html>
       border-radius: 12px;
       padding: 28px;
       position: relative;
+      min-width: 0;
     }
 
     .card-label {
