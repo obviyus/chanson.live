@@ -39,6 +39,7 @@ export type ServerMessage =
   | { type: "now_playing"; track: TrackMetadata | null }
   | { type: "producer_started"; producerId: string }
   | { type: "producer_closed"; producerId: string }
+  | { type: "provider_status"; connected: boolean; ready: boolean; mode: "local" | "external" }
   | { type: "rtp_capabilities"; capabilities: RtpCapabilities }
   | { type: "transport_created"; params: TransportParams }
   | { type: "transport_connected" }
@@ -50,3 +51,31 @@ export type ClientMessage =
   | { type: "create_transport" }
   | { type: "connect_transport"; dtlsParameters: DtlsParameters }
   | { type: "consume"; rtpCapabilities: RtpCapabilities };
+
+export type ProviderClientMessage =
+  | { type: "hello"; token: string }
+  | {
+      type: "track_info";
+      request_id: string;
+      source_id: string;
+      source_url: string;
+      title: string;
+      uploader?: string | null;
+      duration_sec?: number | null;
+    }
+  | { type: "track_uploaded"; request_id: string; source_id: string }
+  | { type: "track_error"; request_id: string; source_id: string; message: string };
+
+export type ProviderServerMessage = {
+  type: "request_track";
+  request_id: string;
+  source_id: string;
+  url: string;
+};
+
+export type ProviderStatus = {
+  type: "provider_status";
+  connected: boolean;
+  ready: boolean;
+  mode: "local" | "external";
+};
