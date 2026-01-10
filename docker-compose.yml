@@ -11,6 +11,22 @@ services:
       RTC_MIN_PORT: "10000"
       RTC_MAX_PORT: "20000"
       STUN_URLS: "stun:stun.l.google.com:19302"
+      PROVIDER_MODE: "local"
+      PROVIDER_TOKEN: ""
+      AUDIO_QUALITY: "5"
+      CACHE_MAX_BYTES: "5368709120"
     volumes:
       - ./data:/app/data
       - ./downloads:/app/downloads
+
+  provider:
+    build:
+      context: .
+      dockerfile: Dockerfile.provider
+    environment:
+      BROADCASTER_URL: "https://your-vps-domain"
+      PROVIDER_TOKEN: ""
+      PROVIDER_DOWNLOAD_DIR: "/provider-downloads"
+      AUDIO_QUALITY: "5"
+    volumes:
+      - ./provider-downloads:/provider-downloads

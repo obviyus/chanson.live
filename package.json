@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "bun run app/server/index.ts",
     "start": "NODE_ENV=production bun run app/server/index.ts",
-    "test:e2e": "bun run app/server/test-e2e.ts"
+    "test:e2e": "bun run app/server/test-e2e.ts",
+    "provider": "bun run app/provider/index.ts"
   },
   "dependencies": {
     "mediasoup": "^3.14.16",
