@@ -49,6 +49,44 @@ export function updateTrackFilePath(
   db.query("UPDATE tracks SET file_path = ? WHERE id = ?").run(filePath, trackId);
 }
 
+export function updateTrackFilePathBySourceId(
+  db: Database,
+  source: string,
+  sourceId: string,
+  filePath: string | null
+): void {
+  db.query(
+    "UPDATE tracks SET file_path = ? WHERE source = ? AND source_id = ?"
+  ).run(filePath, source, sourceId);
+}
+
+export function updateTrackMetadataBySourceId(
+  db: Database,
+  source: string,
+  sourceId: string,
+  data: {
+    title: string;
+    uploader: string | null;
+    duration_sec: number | null;
+    source_url: string;
+  }
+): void {
+  db.query(
+    `
+    UPDATE tracks
+    SET title = ?, uploader = ?, duration_sec = ?, source_url = ?
+    WHERE source = ? AND source_id = ?
+  `
+  ).run(
+    data.title,
+    data.uploader,
+    data.duration_sec,
+    data.source_url,
+    source,
+    sourceId
+  );
+}
+
 export function getQueue(db: Database): (QueueItem & Track)[] {
   return db
     .query<QueueItem & Track, []>(`
@@ -103,6 +141,30 @@ export function popQueue(db: Database): (QueueItem & Track) | null {
 
   if (first) removeFromQueue(db, first.id);
   return first ?? null;
+}
+
+export function peekQueue(db: Database): (QueueItem & Track) | null {
+  return db
+    .query<QueueItem & Track, []>(`
+      SELECT q.*, t.source, t.source_id, t.source_url, t.title, t.uploader, t.duration_sec, t.file_path
+      FROM queue q
+      JOIN tracks t ON q.track_id = t.id
+      ORDER BY q.position ASC
+      LIMIT 1
+    `)
+    .get();
+}
+
+export function removeFromQueueByTrackId(db: Database, trackId: number): void {
+  const item = db
+    .query<{ id: number; position: number }, [number]>(
+      "SELECT id, position FROM queue WHERE track_id = ?"
+    )
+    .get(trackId);
+  if (!item) return;
+
+  db.query("DELETE FROM queue WHERE id = ?").run(item.id);
+  db.query("UPDATE queue SET position = position - 1 WHERE position > ?").run(item.position);
 }
 
 export function clearQueue(db: Database): void {
