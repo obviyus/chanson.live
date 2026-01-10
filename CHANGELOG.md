@@ -1,3 +1,16 @@
+# [1.3.0](https://github.com/obviyus/chanson.live/compare/v1.2.1...v1.3.0) (2026-01-10)
+
+
+### Features
+
+* add Bun-based server with mediasoup WebRTC streaming ([6bd86e0](https://github.com/obviyus/chanson.live/commit/6bd86e026041cbbdfa4fa1ccbf777ab693e27a84))
+* **docker:** add Dockerfile and compose for production deploy ([e2a6b96](https://github.com/obviyus/chanson.live/commit/e2a6b964e7dcfe72197ce1821f80b987b38b3d65))
+* **pages:** add app and test HTML pages, replace test-stream ([c56ece2](https://github.com/obviyus/chanson.live/commit/c56ece2176fb632393c3f9b402157a5ffe3d7c81))
+* **player:** add queue management and playback loop ([3f7dda7](https://github.com/obviyus/chanson.live/commit/3f7dda7367c8f7df7ca8cd2a096adcbf7de14b7c))
+* **server:** add config and fs utility modules ([c423e8b](https://github.com/obviyus/chanson.live/commit/c423e8b5182343041cbd9aee54c1d906a79505dd))
+* **server:** wire up HTTP routes and player startup ([35a813f](https://github.com/obviyus/chanson.live/commit/35a813fef47dcc3fac37e0e7db2f8fd921d02d70))
+* **youtube:** add yt-dlp integration for audio downloads ([34f4f88](https://github.com/obviyus/chanson.live/commit/34f4f88de5681b001e3758ee83a24a8594579eb2))
+
 ## [1.2.1](https://github.com/obviyus/chanson.live/compare/v1.2.0...v1.2.1) (2024-02-27)
 
 
