@@ -1,6 +1,6 @@
 import type { ServerWebSocket } from "bun";
 import type { RtpCapabilities, DtlsParameters } from "mediasoup/types";
-import type { ServerMessage, ClientMessage, SongMetadata } from "./types";
+import type { ServerMessage, ClientMessage, TrackMetadata } from "./types";
 import { mediasoupHandler } from "./mediasoup";
 
 /**
@@ -18,7 +18,7 @@ interface ClientData {
 const clients = new Map<string, ServerWebSocket<ClientData>>();
 
 // Current queue (will be managed by queue.ts)
-let currentQueue: SongMetadata[] = [];
+let currentQueue: TrackMetadata[] = [];
 
 /**
  * Generate a unique client ID.
@@ -54,7 +54,7 @@ function broadcastClientCount(): void {
 /**
  * Broadcast queue update to all clients.
  */
-export function broadcastQueue(queue: SongMetadata[]): void {
+export function broadcastQueue(queue: TrackMetadata[]): void {
   currentQueue = queue;
   broadcast({ type: "queue_update", queue });
 }
@@ -62,8 +62,8 @@ export function broadcastQueue(queue: SongMetadata[]): void {
 /**
  * Broadcast now playing update to all clients.
  */
-export function broadcastNowPlaying(song: SongMetadata | null): void {
-  broadcast({ type: "now_playing", song });
+export function broadcastNowPlaying(track: TrackMetadata | null): void {
+  broadcast({ type: "now_playing", track });
 }
 
 /**
@@ -198,18 +198,18 @@ export const websocketHandler = {
       send(ws, { type: "producer_started", producerId: mediasoupHandler.producer.id });
     }
 
-    // Send current song if playing
-    const currentSong = mediasoupHandler.getCurrentSong();
-    if (currentSong) {
-      send(ws, { type: "now_playing", song: currentSong });
+    // Send current track if playing
+    const currentTrack = mediasoupHandler.getCurrentTrack();
+    if (currentTrack) {
+      send(ws, { type: "now_playing", track: currentTrack });
     }
   },
 
-  message(ws: ServerWebSocket<ClientData>, message: string | Buffer) {
+  message(ws: ServerWebSocket<ClientData>, message: string | ArrayBuffer | Uint8Array) {
     try {
-      const parsed = JSON.parse(
-        typeof message === "string" ? message : message.toString()
-      ) as ClientMessage;
+      const text =
+        typeof message === "string" ? message : new TextDecoder().decode(message);
+      const parsed = JSON.parse(text) as ClientMessage;
       handleMessage(ws, parsed).catch((error) => {
         console.error(`[ws] Error handling message:`, error);
         send(ws, { type: "error", message: "Internal error" });

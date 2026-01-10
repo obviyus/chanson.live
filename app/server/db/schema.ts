@@ -11,95 +11,68 @@ export function initDatabase(path: string): Database {
   db.exec("PRAGMA journal_mode = WAL");
 
   db.exec(`
-    -- Song metadata cache
-    CREATE TABLE IF NOT EXISTS songs (
+    CREATE TABLE IF NOT EXISTS tracks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      spotify_id TEXT UNIQUE NOT NULL,
+      source TEXT NOT NULL,
+      source_id TEXT NOT NULL,
+      source_url TEXT NOT NULL,
       title TEXT NOT NULL,
-      artist TEXT NOT NULL,
-      album TEXT NOT NULL,
-      cover_url TEXT NOT NULL,
-      duration_ms INTEGER,
+      uploader TEXT,
+      duration_sec INTEGER,
       file_path TEXT,
-      create_time DATETIME DEFAULT CURRENT_TIMESTAMP
+      create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(source, source_id)
     );
 
-    -- Play history for analytics and auto-queue
-    CREATE TABLE IF NOT EXISTS play_history (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      song_id INTEGER NOT NULL REFERENCES songs(id),
-      requested_by TEXT,
-      played_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      source TEXT DEFAULT 'manual'
-    );
-
-    -- Aggregated song statistics
-    CREATE TABLE IF NOT EXISTS song_stats (
-      song_id INTEGER PRIMARY KEY REFERENCES songs(id),
-      play_count INTEGER DEFAULT 0,
-      last_played DATETIME
-    );
-
-    -- Blacklisted songs
-    CREATE TABLE IF NOT EXISTS blacklist (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      spotify_id TEXT UNIQUE NOT NULL,
-      reason TEXT,
-      create_time DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    -- Current queue (persisted for crash recovery)
     CREATE TABLE IF NOT EXISTS queue (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      song_id INTEGER NOT NULL REFERENCES songs(id),
+      track_id INTEGER NOT NULL REFERENCES tracks(id),
       position INTEGER NOT NULL,
       requested_by TEXT,
-      is_automated BOOLEAN DEFAULT FALSE,
       create_time DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
-    -- Indexes for common queries
-    CREATE INDEX IF NOT EXISTS idx_songs_spotify_id ON songs(spotify_id);
-    CREATE INDEX IF NOT EXISTS idx_play_history_song_id ON play_history(song_id);
-    CREATE INDEX IF NOT EXISTS idx_play_history_played_at ON play_history(played_at);
+    CREATE TABLE IF NOT EXISTS play_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      track_id INTEGER NOT NULL REFERENCES tracks(id),
+      requested_by TEXT,
+      source TEXT NOT NULL,
+      create_time DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_tracks_source_id ON tracks(source, source_id);
     CREATE INDEX IF NOT EXISTS idx_queue_position ON queue(position);
+    CREATE INDEX IF NOT EXISTS idx_history_track_id ON play_history(track_id);
+    CREATE INDEX IF NOT EXISTS idx_history_create_time ON play_history(create_time);
   `);
 
   return db;
 }
 
-// Type definitions for database rows
-export interface Song {
+export interface Track {
   id: number;
-  spotify_id: string;
+  source: string;
+  source_id: string;
+  source_url: string;
   title: string;
-  artist: string;
-  album: string;
-  cover_url: string;
-  duration_ms: number | null;
+  uploader: string | null;
+  duration_sec: number | null;
   file_path: string | null;
+  create_time: string;
+}
+
+export interface QueueItem {
+  id: number;
+  track_id: number;
+  position: number;
+  requested_by: string | null;
   create_time: string;
 }
 
 export interface PlayHistory {
   id: number;
-  song_id: number;
+  track_id: number;
   requested_by: string | null;
-  played_at: string;
   source: string;
-}
-
-export interface SongStats {
-  song_id: number;
-  play_count: number;
-  last_played: string | null;
-}
-
-export interface QueueItem {
-  id: number;
-  song_id: number;
-  position: number;
-  requested_by: string | null;
-  is_automated: boolean;
   create_time: string;
 }

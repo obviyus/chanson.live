@@ -10,7 +10,14 @@ import type {
   Worker,
   DtlsParameters,
 } from "mediasoup/types";
-import type { ConsumerResponse, SongMetadata } from "./types";
+import type { ConsumerResponse, TrackMetadata } from "./types";
+import {
+  MEDIASOUP_ANNOUNCED_IP,
+  MEDIASOUP_LISTEN_IP,
+  NODE_ENV,
+  RTC_MAX_PORT,
+  RTC_MIN_PORT,
+} from "./config";
 
 /**
  * AIDEV-NOTE: This module manages a single Mediasoup worker with one audio producer
@@ -20,18 +27,23 @@ import type { ConsumerResponse, SongMetadata } from "./types";
  * instead of being hardcoded to an absolute path.
  */
 
-// Dynamically resolve mediasoup worker path
 const mediasoup = await import("mediasoup");
 
 function getListenIps(): Array<{ ip: string; announcedIp?: string }> {
-  if (Bun.env.NODE_ENV !== "production") {
+  if (NODE_ENV !== "production") {
     return [{ ip: "127.0.0.1" }];
+  }
+
+  if (!MEDIASOUP_ANNOUNCED_IP) {
+    console.warn(
+      "[mediasoup] MEDIASOUP_ANNOUNCED_IP missing; clients may fail behind NAT"
+    );
   }
 
   return [
     {
-      ip: Bun.env.MEDIASOUP_LISTEN_IP!,
-      announcedIp: Bun.env.MEDIASOUP_ANNOUNCED_IP!,
+      ip: MEDIASOUP_LISTEN_IP,
+      announcedIp: MEDIASOUP_ANNOUNCED_IP || undefined,
     },
   ];
 }
@@ -40,8 +52,8 @@ const listenIps = getListenIps();
 
 const mediasoupConfig = {
   worker: {
-    rtcMinPort: 10_000,
-    rtcMaxPort: 59_999,
+    rtcMinPort: RTC_MIN_PORT,
+    rtcMaxPort: RTC_MAX_PORT,
     logLevel: "warn" as const,
     logTags: ["info", "ice", "dtls", "rtp", "srtp", "rtcp"] as ("info" | "ice" | "dtls" | "rtp" | "srtp" | "rtcp")[],
   },
@@ -73,7 +85,7 @@ export class MediasoupHandler {
   private producerTransport: PlainTransport | undefined;
   private transports: Map<string, Transport> = new Map();
   private consumers: Map<string, Consumer> = new Map();
-  private currentSong: SongMetadata | undefined;
+  private currentTrack: TrackMetadata | undefined;
   private initialized = false;
 
   // Callbacks for broadcasting to WebSocket clients
@@ -303,14 +315,14 @@ export class MediasoupHandler {
   }
 
   /**
-   * Set current song metadata.
+   * Set current track metadata.
    */
-  setCurrentSong(song: SongMetadata | undefined): void {
-    this.currentSong = song;
+  setCurrentTrack(track: TrackMetadata | undefined): void {
+    this.currentTrack = track;
   }
 
-  getCurrentSong(): SongMetadata | undefined {
-    return this.currentSong;
+  getCurrentTrack(): TrackMetadata | undefined {
+    return this.currentTrack;
   }
 }
 
