@@ -14,9 +14,11 @@ if (!broadcasterUrl || !providerToken) {
 
 await Bun.$`mkdir -p ${downloadDir}`;
 
-const baseUrl = broadcasterUrl.replace(/\/$/, "");
-const wsUrl = baseUrl.replace(/^http/, "ws") + `/provider?token=${encodeURIComponent(providerToken)}`;
-const uploadBase = baseUrl + "/api/provider/upload";
+const baseUrl = new URL(broadcasterUrl);
+const wsUrl = new URL("/provider", baseUrl);
+wsUrl.protocol = wsUrl.protocol === "https:" ? "wss:" : "ws:";
+wsUrl.searchParams.set("token", providerToken);
+const uploadBase = new URL("/api/provider/upload/", baseUrl);
 
 interface RequestTrack {
   type: "request_track";
@@ -28,7 +30,7 @@ interface RequestTrack {
 const queue: RequestTrack[] = [];
 let processing = false;
 
-const ws = new WebSocket(wsUrl);
+const ws = new WebSocket(wsUrl.toString());
 
 ws.onopen = () => {
   ws.send(JSON.stringify({ type: "hello", token: providerToken }));
@@ -89,8 +91,10 @@ async function handleRequest(request: RequestTrack): Promise<void> {
 
   const filePath = await downloadYouTubeAudio(info.url, request.source_id);
 
-  const uploadUrl = `${uploadBase}/${request.source_id}?token=${encodeURIComponent(providerToken)}`;
-  const uploadRes = await fetch(uploadUrl, {
+  const uploadUrl = new URL(request.source_id, uploadBase);
+  uploadUrl.searchParams.set("token", providerToken);
+  console.log(`[provider] uploading ${request.source_id}.mp3`);
+  const uploadRes = await fetch(uploadUrl.toString(), {
     method: "PUT",
     body: Bun.file(filePath),
     headers: {
@@ -100,8 +104,10 @@ async function handleRequest(request: RequestTrack): Promise<void> {
 
   if (!uploadRes.ok) {
     const text = await uploadRes.text();
-    throw new Error(`upload failed: ${text}`);
+    throw new Error(`upload failed (${uploadRes.status}): ${text}`);
   }
+
+  console.log(`[provider] upload ok ${request.source_id}.mp3`);
 
   ws.send(
     JSON.stringify({
