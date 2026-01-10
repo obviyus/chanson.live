@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/obviyus/chanson.live/compare/v1.4.0...v1.5.0) (2026-01-10)
+
+
+### Features
+
+* **docker:** update CMD in Dockerfile to include mediasoup worker postinstall check ([1757e05](https://github.com/obviyus/chanson.live/commit/1757e0555698875e060bff89bbe7da58d72a0482))
+
 # [1.4.0](https://github.com/obviyus/chanson.live/compare/v1.3.0...v1.4.0) (2026-01-10)
 
 
