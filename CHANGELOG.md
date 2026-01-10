@@ -1,3 +1,16 @@
+# [1.8.0](https://github.com/obviyus/chanson.live/compare/v1.7.1...v1.8.0) (2026-01-10)
+
+
+### Bug Fixes
+
+* **ui:** remove duplicate live indicator from header ([1f81b87](https://github.com/obviyus/chanson.live/commit/1f81b875dc65d12c0900990b74398dcb2ae2261f))
+
+
+### Features
+
+* **player:** add fallback playback from cached tracks when queue is empty ([eb81d09](https://github.com/obviyus/chanson.live/commit/eb81d09d0182dc8b2e39890797d547c28dd60be5))
+* **ui:** redesign frontend with hi-fi aesthetic and reactive visualizer ([e2a4c45](https://github.com/obviyus/chanson.live/commit/e2a4c45120dcff8183691e2733e66b0fafddc543))
+
 ## [1.7.1](https://github.com/obviyus/chanson.live/compare/v1.7.0...v1.7.1) (2026-01-10)
 
 
