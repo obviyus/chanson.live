@@ -1,7 +1,21 @@
 import type { ServerWebSocket } from "bun";
 import type { RtpCapabilities, DtlsParameters } from "mediasoup/types";
-import type { ServerMessage, ClientMessage, TrackMetadata } from "./types";
+import type {
+  ServerMessage,
+  ClientMessage,
+  TrackMetadata,
+  ProviderClientMessage,
+  ProviderStatus,
+} from "./types";
 import { mediasoupHandler } from "./mediasoup";
+import {
+  getProviderStatus,
+  handleProviderMessage,
+  registerProviderSocket,
+  setProviderStatusListener,
+  unregisterProviderSocket,
+  type ProviderData,
+} from "./provider";
 
 /**
  * AIDEV-NOTE: Bun WebSocket handler replacing Socket.io.
@@ -10,6 +24,7 @@ import { mediasoupHandler } from "./mediasoup";
  */
 
 interface ClientData {
+  role: "client";
   id: string;
   connectedAt: number;
 }
@@ -27,6 +42,10 @@ function generateClientId(): string {
   return `client_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
+export function createClientData(): ClientData {
+  return { role: "client", id: generateClientId(), connectedAt: Date.now() };
+}
+
 /**
  * Send a typed message to a single client.
  */
@@ -42,6 +61,10 @@ function broadcast(message: ServerMessage): void {
   for (const ws of clients.values()) {
     ws.send(data);
   }
+}
+
+function broadcastProviderStatus(status: ProviderStatus): void {
+  broadcast(status);
 }
 
 /**
@@ -178,7 +201,12 @@ async function handleMessage(
  * WebSocket handler configuration for Bun.serve.
  */
 export const websocketHandler = {
-  open(ws: ServerWebSocket<ClientData>) {
+  open(ws: ServerWebSocket<ClientData | ProviderData>) {
+    if (ws.data.role === "provider") {
+      registerProviderSocket(ws);
+      return;
+    }
+
     const clientId = ws.data.id;
     clients.set(clientId, ws);
 
@@ -203,24 +231,39 @@ export const websocketHandler = {
     if (currentTrack) {
       send(ws, { type: "now_playing", track: currentTrack });
     }
+
+    send(ws, getProviderStatus());
   },
 
-  message(ws: ServerWebSocket<ClientData>, message: string | ArrayBuffer | Uint8Array) {
+  message(ws: ServerWebSocket<ClientData | ProviderData>, message: string | ArrayBuffer | Uint8Array) {
     try {
       const text =
         typeof message === "string" ? message : new TextDecoder().decode(message);
-      const parsed = JSON.parse(text) as ClientMessage;
-      handleMessage(ws, parsed).catch((error) => {
+      const parsed = JSON.parse(text);
+
+      if (ws.data.role === "provider") {
+        handleProviderMessage(ws, parsed as ProviderClientMessage);
+        return;
+      }
+
+      handleMessage(ws, parsed as ClientMessage).catch((error) => {
         console.error(`[ws] Error handling message:`, error);
         send(ws, { type: "error", message: "Internal error" });
       });
     } catch (error) {
       console.error(`[ws] Failed to parse message:`, error);
-      send(ws, { type: "error", message: "Invalid JSON" });
+      if (ws.data.role === "client") {
+        send(ws, { type: "error", message: "Invalid JSON" });
+      }
     }
   },
 
-  close(ws: ServerWebSocket<ClientData>) {
+  close(ws: ServerWebSocket<ClientData | ProviderData>) {
+    if (ws.data.role === "provider") {
+      unregisterProviderSocket(ws);
+      return;
+    }
+
     const clientId = ws.data.id;
     clients.delete(clientId);
 
@@ -231,7 +274,11 @@ export const websocketHandler = {
     broadcastClientCount();
   },
 
-  error(ws: ServerWebSocket<ClientData>, error: Error) {
+  error(ws: ServerWebSocket<ClientData | ProviderData>, error: Error) {
+    if (ws.data.role === "provider") {
+      console.error(`[ws] Provider error:`, error);
+      return;
+    }
     console.error(`[ws] Error for ${ws.data.id}:`, error);
   },
 };
@@ -241,11 +288,11 @@ export const websocketHandler = {
  */
 export function upgradeToWebSocket(
   req: Request,
-  server: ReturnType<typeof Bun.serve>
+  server: ReturnType<typeof Bun.serve>,
+  data: ClientData | ProviderData
 ): Response | undefined {
-  const clientId = generateClientId();
   const success = server.upgrade(req, {
-    data: { id: clientId, connectedAt: Date.now() } satisfies ClientData,
+    data,
   });
 
   return success ? undefined : new Response("WebSocket upgrade failed", { status: 400 });
@@ -256,3 +303,5 @@ mediasoupHandler.setCallbacks({
   onProducerCreated: broadcastProducerStarted,
   onProducerClosed: broadcastProducerClosed,
 });
+
+setProviderStatusListener(broadcastProviderStatus);

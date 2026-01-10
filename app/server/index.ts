@@ -1,17 +1,28 @@
 import { initDatabase } from "./db/schema";
 import { ensureDirectories } from "./fs";
-import { DB_PATH, PORT, STUN_URLS } from "./config";
-import { websocketHandler, upgradeToWebSocket } from "./websocket";
-import { initQueue, getQueueSnapshot, enqueueTrack } from "./queue";
-import { ensureTrackFromYouTubeUrl } from "./tracks";
+import {
+  CACHE_MAX_BYTES,
+  DB_PATH,
+  DOWNLOAD_DIR,
+  PORT,
+  PROVIDER_TOKEN,
+  STUN_URLS,
+} from "./config";
+import { websocketHandler, upgradeToWebSocket, createClientData } from "./websocket";
+import { initQueue, getQueueSnapshot } from "./queue";
+import { handleQueueRequest } from "./requests";
 import { Player } from "./player";
 import { TEST_PAGE_HTML } from "./test-page";
 import { APP_PAGE_HTML } from "./app-page";
+import { initProvider, getProviderStatus, updateTrackFileFromUpload } from "./provider";
+import { pruneDownloads } from "./cache";
+import { getQueue } from "./db/queries";
+import { join } from "path";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Content-Type",
-  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Access-Control-Allow-Methods": "GET,POST,PUT,OPTIONS",
 };
 
 function json(data: unknown, init: ResponseInit = {}): Response {
@@ -29,6 +40,7 @@ await ensureDirectories();
 
 const db = initDatabase(DB_PATH);
 initQueue(db);
+initProvider(db);
 
 const player = new Player(db);
 player.start();
@@ -43,7 +55,24 @@ const server = Bun.serve({
     }
 
     if (url.pathname === "/ws") {
-      const response = upgradeToWebSocket(req, server);
+      const response = upgradeToWebSocket(req, server, createClientData());
+      if (response) return response;
+      return undefined;
+    }
+
+    if (url.pathname === "/provider") {
+      if (getProviderStatus().mode !== "external") {
+        return new Response("Provider disabled", { status: 404 });
+      }
+      const token = url.searchParams.get("token") ?? "";
+      if (!PROVIDER_TOKEN || token !== PROVIDER_TOKEN) {
+        return new Response("Unauthorized", { status: 401 });
+      }
+      const response = upgradeToWebSocket(req, server, {
+        role: "provider",
+        token,
+        connectedAt: Date.now(),
+      });
       if (response) return response;
       return undefined;
     }
@@ -55,6 +84,7 @@ const server = Bun.serve({
     if (url.pathname === "/api/config") {
       return json({
         ice_servers: buildIceServers(),
+        provider: getProviderStatus(),
       });
     }
 
@@ -90,6 +120,13 @@ const server = Bun.serve({
       return json({ ok: true });
     }
 
+    if (url.pathname.startsWith("/api/provider/upload/") && req.method === "PUT") {
+      return handleProviderUpload(req, url).catch((error) => {
+        console.error("[api] provider upload error", error);
+        return json({ error: error?.message ?? "internal error" }, { status: 500 });
+      });
+    }
+
     return new Response("Not Found", { status: 404 });
   },
   websocket: websocketHandler,
@@ -108,10 +145,47 @@ async function handleQueuePost(req: Request): Promise<Response> {
     return json({ error: "url required" }, { status: 400 });
   }
 
-  const track = await ensureTrackFromYouTubeUrl(db, body.url);
-  enqueueTrack(db, track, body.requested_by ?? null);
+  try {
+    const track = await handleQueueRequest(db, body.url, body.requested_by ?? null);
+    return json({ ok: true, track });
+  } catch (error) {
+    return json({ error: error?.message ?? "request failed" }, { status: 400 });
+  }
+}
 
-  return json({ ok: true, track });
+async function handleProviderUpload(req: Request, url: URL): Promise<Response> {
+  if (getProviderStatus().mode !== "external") {
+    return json({ error: "provider disabled" }, { status: 404 });
+  }
+  const token = url.searchParams.get("token") ?? "";
+  if (!PROVIDER_TOKEN || token !== PROVIDER_TOKEN) {
+    return json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  const sourceId = url.pathname.split("/").pop();
+  if (!sourceId) {
+    return json({ error: "missing source id" }, { status: 400 });
+  }
+  if (!/^[a-zA-Z0-9_-]{11}$/.test(sourceId)) {
+    return json({ error: "invalid source id" }, { status: 400 });
+  }
+
+  if (!req.body) {
+    return json({ error: "missing body" }, { status: 400 });
+  }
+
+  const filePath = join(DOWNLOAD_DIR, `${sourceId}.mp3`);
+  await Bun.write(filePath, new Response(req.body));
+  updateTrackFileFromUpload(sourceId, filePath);
+
+  const queue = getQueue(db);
+  const protectedIds = new Set<string>(queue.map((item) => item.source_id));
+  const nowPlaying = player.getNowPlaying();
+  if (nowPlaying) protectedIds.add(nowPlaying.source_id);
+
+  await pruneDownloads(db, CACHE_MAX_BYTES, protectedIds);
+
+  return json({ ok: true });
 }
 
 function buildIceServers(): Array<{
