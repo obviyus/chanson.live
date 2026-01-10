@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/obviyus/chanson.live/compare/v1.9.1...v1.10.0) (2026-01-10)
+
+
+### Features
+
+* **admin:** show rotation pool ([d1934a3](https://github.com/obviyus/chanson.live/commit/d1934a331ffb961c5f78a21ccc0c791cf880bb25))
+
 ## [1.9.1](https://github.com/obviyus/chanson.live/compare/v1.9.0...v1.9.1) (2026-01-10)
 
 
