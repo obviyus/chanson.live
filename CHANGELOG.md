@@ -1,3 +1,10 @@
+## [1.7.1](https://github.com/obviyus/chanson.live/compare/v1.7.0...v1.7.1) (2026-01-10)
+
+
+### Bug Fixes
+
+* ensure NODE_ENV set for production ([66cce70](https://github.com/obviyus/chanson.live/commit/66cce70109b250bd303214bbc8606d0fc729542f))
+
 # [1.7.0](https://github.com/obviyus/chanson.live/compare/v1.6.1...v1.7.0) (2026-01-10)
 
 
