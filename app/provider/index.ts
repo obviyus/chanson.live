@@ -18,8 +18,6 @@ const baseUrl = new URL(broadcasterUrl);
 const wsUrl = new URL("/provider", baseUrl);
 wsUrl.protocol = wsUrl.protocol === "https:" ? "wss:" : "ws:";
 wsUrl.searchParams.set("token", providerToken);
-const uploadBase = new URL("/api/provider/upload/", baseUrl);
-
 interface RequestTrack {
   type: "request_track";
   request_id: string;
@@ -91,22 +89,8 @@ async function handleRequest(request: RequestTrack): Promise<void> {
 
   const filePath = await downloadYouTubeAudio(info.url, request.source_id);
 
-  const uploadUrl = new URL(request.source_id, uploadBase);
-  uploadUrl.searchParams.set("token", providerToken);
   console.log(`[provider] uploading ${request.source_id}.mp3`);
-  const uploadRes = await fetch(uploadUrl.toString(), {
-    method: "PUT",
-    body: Bun.file(filePath),
-    headers: {
-      "Content-Type": "audio/mpeg",
-    },
-  });
-
-  if (!uploadRes.ok) {
-    const text = await uploadRes.text();
-    throw new Error(`upload failed (${uploadRes.status}): ${text}`);
-  }
-
+  await uploadFileOverWebSocket(request.source_id, filePath);
   console.log(`[provider] upload ok ${request.source_id}.mp3`);
 
   ws.send(
@@ -205,4 +189,19 @@ async function downloadYouTubeAudio(url: string, id: string): Promise<string> {
   }
 
   return expectedPath;
+}
+
+async function uploadFileOverWebSocket(sourceId: string, filePath: string): Promise<void> {
+  ws.send(JSON.stringify({ type: "upload_start", source_id: sourceId }));
+
+  const stream = Bun.file(filePath).stream();
+  const reader = stream.getReader();
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    if (value) ws.send(value);
+  }
+
+  ws.send(JSON.stringify({ type: "upload_end", source_id: sourceId }));
 }

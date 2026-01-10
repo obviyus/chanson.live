@@ -10,6 +10,7 @@ import type {
 import { mediasoupHandler } from "./mediasoup";
 import {
   getProviderStatus,
+  handleProviderBinaryChunk,
   handleProviderMessage,
   registerProviderSocket,
   setProviderStatusListener,
@@ -44,6 +45,18 @@ function generateClientId(): string {
 
 export function createClientData(): ClientData {
   return { role: "client", id: generateClientId(), connectedAt: Date.now() };
+}
+
+function isProviderSocket(
+  ws: ServerWebSocket<ClientData | ProviderData>
+): ws is ServerWebSocket<ProviderData> {
+  return ws.data.role === "provider";
+}
+
+function isClientSocket(
+  ws: ServerWebSocket<ClientData | ProviderData>
+): ws is ServerWebSocket<ClientData> {
+  return ws.data.role === "client";
 }
 
 /**
@@ -202,7 +215,7 @@ async function handleMessage(
  */
 export const websocketHandler = {
   open(ws: ServerWebSocket<ClientData | ProviderData>) {
-    if (ws.data.role === "provider") {
+    if (isProviderSocket(ws)) {
       registerProviderSocket(ws);
       return;
     }
@@ -236,30 +249,37 @@ export const websocketHandler = {
   },
 
   message(ws: ServerWebSocket<ClientData | ProviderData>, message: string | ArrayBuffer | Uint8Array) {
+    if (isProviderSocket(ws) && typeof message !== "string") {
+      handleProviderBinaryChunk(ws, message);
+      return;
+    }
+
     try {
       const text =
         typeof message === "string" ? message : new TextDecoder().decode(message);
       const parsed = JSON.parse(text);
 
-      if (ws.data.role === "provider") {
+      if (isProviderSocket(ws)) {
         handleProviderMessage(ws, parsed as ProviderClientMessage);
         return;
       }
 
       handleMessage(ws, parsed as ClientMessage).catch((error) => {
         console.error(`[ws] Error handling message:`, error);
-        send(ws, { type: "error", message: "Internal error" });
+        if (isClientSocket(ws)) {
+          send(ws, { type: "error", message: "Internal error" });
+        }
       });
     } catch (error) {
       console.error(`[ws] Failed to parse message:`, error);
-      if (ws.data.role === "client") {
+      if (isClientSocket(ws)) {
         send(ws, { type: "error", message: "Invalid JSON" });
       }
     }
   },
 
   close(ws: ServerWebSocket<ClientData | ProviderData>) {
-    if (ws.data.role === "provider") {
+    if (isProviderSocket(ws)) {
       unregisterProviderSocket(ws);
       return;
     }
@@ -275,11 +295,15 @@ export const websocketHandler = {
   },
 
   error(ws: ServerWebSocket<ClientData | ProviderData>, error: Error) {
-    if (ws.data.role === "provider") {
+    if (isProviderSocket(ws)) {
       console.error(`[ws] Provider error:`, error);
       return;
     }
-    console.error(`[ws] Error for ${ws.data.id}:`, error);
+    if (isClientSocket(ws)) {
+      console.error(`[ws] Error for ${ws.data.id}:`, error);
+    } else {
+      console.error(`[ws] Error:`, error);
+    }
   },
 };
 

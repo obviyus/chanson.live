@@ -63,6 +63,8 @@ export type ProviderClientMessage =
       uploader?: string | null;
       duration_sec?: number | null;
     }
+  | { type: "upload_start"; source_id: string }
+  | { type: "upload_end"; source_id: string }
   | { type: "track_uploaded"; request_id: string; source_id: string }
   | { type: "track_error"; request_id: string; source_id: string; message: string };
 

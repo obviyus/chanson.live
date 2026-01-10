@@ -1,20 +1,31 @@
 import type { Database } from "bun:sqlite";
-import type { ServerWebSocket } from "bun";
+import type { FileSink, ServerWebSocket } from "bun";
 import type { ProviderClientMessage, ProviderServerMessage, ProviderStatus } from "./types";
-import { PROVIDER_MODE, PROVIDER_TOKEN } from "./config";
+import { CACHE_MAX_BYTES, DOWNLOAD_DIR, PROVIDER_MODE, PROVIDER_TOKEN } from "./config";
 import {
   removeFromQueueByTrackId,
   updateTrackMetadataBySourceId,
   updateTrackFilePathBySourceId,
   getTrackBySourceId,
   insertTrack,
+  getQueue,
 } from "./db/queries";
 import { refreshQueue } from "./queue";
+import { pruneDownloads } from "./cache";
+import { mediasoupHandler } from "./mediasoup";
+import { join } from "path";
 
 export interface ProviderData {
   role: "provider";
   token?: string;
   connectedAt: number;
+}
+
+interface ProviderUploadState {
+  sourceId: string;
+  filePath: string;
+  writer: FileSink;
+  bytes: number;
 }
 
 let dbRef: Database | null = null;
@@ -23,6 +34,10 @@ let providerReady = false;
 const pendingSourceIds = new Set<string>();
 const pendingByRequest = new Map<string, string>();
 let statusListener: ((status: ProviderStatus) => void) | null = null;
+// AIDEV-NOTE: Provider upload is streamed over WebSocket; single in-flight upload to avoid interleaving.
+let activeUpload: ProviderUploadState | null = null;
+
+const SOURCE_ID_RE = /^[a-zA-Z0-9_-]{11}$/;
 
 export function initProvider(db: Database): void {
   dbRef = db;
@@ -68,6 +83,11 @@ export function unregisterProviderSocket(ws: ServerWebSocket<ProviderData>): voi
     providerReady = false;
     pendingSourceIds.clear();
     pendingByRequest.clear();
+    if (activeUpload) {
+      void activeUpload.writer.end();
+      void Bun.file(activeUpload.filePath).delete();
+      activeUpload = null;
+    }
     notifyStatus();
   }
 }
@@ -95,6 +115,30 @@ export function handleProviderMessage(
   if (!dbRef) return;
 
   switch (message.type) {
+    case "upload_start": {
+      if (!SOURCE_ID_RE.test(message.source_id)) {
+        ws.close(4003, "invalid source id");
+        return;
+      }
+      if (activeUpload) {
+        ws.close(4100, "upload already in progress");
+        return;
+      }
+      const filePath = join(DOWNLOAD_DIR, `${message.source_id}.mp3`);
+      const writer = Bun.file(filePath).writer();
+      writer.start({ highWaterMark: 1024 * 1024 });
+      activeUpload = {
+        sourceId: message.source_id,
+        filePath,
+        writer,
+        bytes: 0,
+      };
+      return;
+    }
+    case "upload_end": {
+      void finalizeUpload(message.source_id);
+      return;
+    }
     case "track_info": {
       const existing = getTrackBySourceId(dbRef, "youtube", message.source_id);
       if (existing) {
@@ -164,4 +208,45 @@ export function updateTrackFileFromUpload(
   if (!dbRef) return;
   updateTrackFilePathBySourceId(dbRef, "youtube", sourceId, filePath);
   refreshQueue(dbRef);
+}
+
+export function handleProviderBinaryChunk(
+  ws: ServerWebSocket<ProviderData>,
+  message: ArrayBuffer | Uint8Array
+): void {
+  if (!providerReady) return;
+  if (!activeUpload) {
+    ws.close(4101, "upload not started");
+    return;
+  }
+
+  const chunk = message instanceof Uint8Array ? message : new Uint8Array(message);
+  activeUpload.bytes += activeUpload.writer.write(chunk);
+}
+
+async function finalizeUpload(sourceId: string): Promise<void> {
+  if (!activeUpload) return;
+  if (activeUpload.sourceId !== sourceId) return;
+
+  const upload = activeUpload;
+  activeUpload = null;
+
+  await upload.writer.end();
+
+  const file = Bun.file(upload.filePath);
+  if (!(await file.exists())) return;
+  const size = (await file.stat()).size;
+  if (size === 0) {
+    await file.delete();
+    return;
+  }
+
+  updateTrackFileFromUpload(sourceId, upload.filePath);
+
+  if (!dbRef) return;
+  const queue = getQueue(dbRef);
+  const protectedIds = new Set<string>(queue.map((item) => item.source_id));
+  const nowPlaying = mediasoupHandler.getCurrentTrack();
+  if (nowPlaying) protectedIds.add(nowPlaying.source_id);
+  await pruneDownloads(dbRef, CACHE_MAX_BYTES, protectedIds);
 }
