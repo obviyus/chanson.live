@@ -153,6 +153,7 @@ data/
 
 # Downloads cache
 downloads/
+provider-downloads/
 
 # IDE
 **/.idea/
