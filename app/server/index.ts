@@ -176,7 +176,8 @@ async function handleProviderUpload(req: Request, url: URL): Promise<Response> {
   }
 
   const filePath = join(DOWNLOAD_DIR, `${sourceId}.mp3`);
-  await Bun.write(filePath, body);
+  const uploadResponse = new Response(body);
+  await Bun.write(filePath, uploadResponse);
   const storedSize = (await Bun.file(filePath).stat()).size;
   if (storedSize === 0) {
     await Bun.file(filePath).delete();
