@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun run app/server/index.ts",
+    "dev": "bun --watch app/server/index.ts",
     "start": "NODE_ENV=production bun run app/server/index.ts",
     "test:e2e": "bun run app/server/test-e2e.ts",
     "provider": "bun run app/provider/index.ts"
