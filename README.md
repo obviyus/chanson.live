@@ -2,7 +2,7 @@
 
 Shared low-latency radio. One stream, many listeners.
 
-Everyone hears the same thing at the same time. Submit a YouTube link, it gets queued, and when it plays—everyone listening hears it together.
+Everyone hears the same thing at the same time. Submit a YouTube link, it gets queued, and when it plays, everyone listening hears it together.
 
 ## How It Works
 
@@ -27,11 +27,11 @@ Everyone hears the same thing at the same time. Submit a YouTube link, it gets q
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-1. **Request** — User submits a YouTube URL via the web interface
-2. **Download** — `yt-dlp` fetches the audio (cached for future plays)
-3. **Transcode** — `ffmpeg` converts to Opus and streams via RTP
-4. **Distribute** — mediasoup (WebRTC SFU) fans out to all connected clients
-5. **Listen** — Everyone hears the same audio at the same time
+1. **Request**: User submits a YouTube URL via the web interface
+2. **Download**: `yt-dlp` fetches the audio (cached for future plays)
+3. **Transcode**: `ffmpeg` converts to Opus and streams via RTP
+4. **Distribute**: mediasoup (WebRTC SFU) fans out to all connected clients
+5. **Listen**: Everyone hears the same audio at the same time
 
 ## Stack
 
@@ -107,8 +107,8 @@ The provider connects to the VPS via WebSocket, receives download requests, fetc
 |----------|---------|-------------|
 | `PORT` | `3000` | HTTP server port |
 | `PROVIDER_MODE` | `local` | `local` or `external` |
-| `PROVIDER_TOKEN` | — | Shared secret for provider auth |
-| `ADMIN_TOKEN` | — | Admin UI auth (defaults to `PROVIDER_TOKEN`) |
+| `PROVIDER_TOKEN` | n/a | Shared secret for provider auth |
+| `ADMIN_TOKEN` | n/a | Admin UI auth (defaults to `PROVIDER_TOKEN`) |
 | `MEDIASOUP_ANNOUNCED_IP` | auto | Public IP for WebRTC (required for production) |
 | `MEDIASOUP_LISTEN_IP` | `0.0.0.0` | Bind address |
 | `RTC_MIN_PORT` | `10000` | WebRTC UDP port range start |
@@ -131,7 +131,7 @@ Unlike per-user streaming, chanson.live uses a **single mediasoup producer** tha
 
 ### Smart Cache Management
 
-Downloaded audio is cached locally. When cache exceeds `CACHE_MAX_BYTES`, the oldest files are pruned—but files currently in queue or playing are protected from deletion.
+Downloaded audio is cached locally. When cache exceeds `CACHE_MAX_BYTES`, the oldest files are pruned, but files currently in queue or playing are protected from deletion.
 
 ### Fallback Playback
 
@@ -158,5 +158,5 @@ open http://localhost:3000/test
 ## Notes
 
 - `MEDIASOUP_ANNOUNCED_IP` **must** be your VPS public IP for clients behind NAT to connect
-- STUN helps NAT discovery but doesn't relay media—some restrictive networks may need TURN
+- STUN helps NAT discovery but doesn't relay media; some restrictive networks may need TURN
 - SQLite runs in WAL mode for better concurrent read performance
