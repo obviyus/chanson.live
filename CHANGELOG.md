@@ -1,3 +1,10 @@
+# [1.14.0](https://github.com/obviyus/chanson.live/compare/v1.13.0...v1.14.0) (2026-01-13)
+
+
+### Features
+
+* **app:** add github link and favicon ([7085775](https://github.com/obviyus/chanson.live/commit/70857758b7ba304de1c2f8fa622734005628d12d))
+
 # [1.13.0](https://github.com/obviyus/chanson.live/compare/v1.12.0...v1.13.0) (2026-01-10)
 
 
