@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="chanson.live">
+  <rect width="64" height="64" rx="14" fill="#0A0A0A"/>
+  <rect x="6" y="6" width="52" height="52" rx="12" fill="#111111" stroke="#2B2412" stroke-width="2"/>
+  <g fill="#D4A853">
+    <rect x="18" y="20" width="6" height="24" rx="3"/>
+    <rect x="29" y="16" width="6" height="32" rx="3"/>
+    <rect x="40" y="24" width="6" height="20" rx="3"/>
+  </g>
+  <circle cx="32" cy="48" r="2" fill="#D4A853" opacity="0.6"/>
+</svg>

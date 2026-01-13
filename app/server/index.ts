@@ -55,6 +55,12 @@ initProvider(db);
 const player = new Player(db);
 player.start();
 
+const faviconFile = Bun.file(new URL("./assets/favicon.svg", import.meta.url));
+const faviconHeaders = {
+  "Content-Type": "image/svg+xml",
+  "Cache-Control": "public, max-age=31536000, immutable",
+};
+
 const server = Bun.serve({
   port: PORT,
   fetch(req, server) {
@@ -89,6 +95,10 @@ const server = Bun.serve({
 
     if (url.pathname === "/health") {
       return new Response("ok", { headers: corsHeaders });
+    }
+
+    if (url.pathname === "/favicon.svg" || url.pathname === "/favicon.ico") {
+      return new Response(faviconFile, { headers: faviconHeaders });
     }
 
     if (url.pathname === "/api/config") {

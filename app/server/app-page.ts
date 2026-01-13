@@ -4,6 +4,7 @@ export const APP_PAGE_HTML = `<!DOCTYPE html>
   <title>chanson.live</title>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -745,6 +746,7 @@ export const APP_PAGE_HTML = `<!DOCTYPE html>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1c-4.97 0-9 4.03-9 9v7c0 1.66 1.34 3 3 3h3v-8H5v-2c0-3.87 3.13-7 7-7s7 3.13 7 7v2h-4v8h3c1.66 0 3-1.34 3-3v-7c0-4.97-4.03-9-9-9z"/></svg>
           <span class="listener-count-number" id="listenerNumber">0</span>
         </div>
+        <a class="header-link" href="https://github.com/obviyus/chanson.live" target="_blank" rel="noreferrer">GitHub</a>
         <a class="header-link" href="/admin">Admin</a>
       </div>
     </header>
