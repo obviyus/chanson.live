@@ -26,6 +26,7 @@ export async function ensureLocalTrackFromYouTubeUrl(
       return existing;
     }
 
+    await fetchYouTubeInfo(normalized.url);
     const filePath = await downloadYouTubeAudio(normalized.url, normalized.id);
     updateTrackFilePath(db, existing.id, filePath);
     return { ...existing, file_path: filePath };

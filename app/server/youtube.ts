@@ -9,6 +9,16 @@ export interface YouTubeInfo {
   duration_sec: number | null;
 }
 
+function isLiveVideo(info: {
+  live_status?: string;
+  is_live?: boolean;
+  was_live?: boolean;
+}): boolean {
+  return info.live_status !== undefined
+    ? info.live_status !== "not_live"
+    : info.is_live === true || info.was_live === true;
+}
+
 /**
  * AIDEV-NOTE: URL parsing + yt-dlp invocation is a critical path; keep strict validation
  * and surface stderr on failure for easier debugging.
@@ -79,7 +89,14 @@ export async function fetchYouTubeInfo(url: string): Promise<YouTubeInfo> {
     channel?: string;
     duration?: number;
     webpage_url?: string;
+    live_status?: string;
+    is_live?: boolean;
+    was_live?: boolean;
   };
+
+  if (isLiveVideo(info)) {
+    throw new Error("Live videos are not supported");
+  }
 
   return {
     id: info.id,

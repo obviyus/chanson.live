@@ -118,6 +118,16 @@ interface YouTubeInfo {
   duration_sec: number | null;
 }
 
+function isLiveVideo(info: {
+  live_status?: string;
+  is_live?: boolean;
+  was_live?: boolean;
+}): boolean {
+  return info.live_status !== undefined
+    ? info.live_status !== "not_live"
+    : info.is_live === true || info.was_live === true;
+}
+
 async function fetchYouTubeInfo(url: string): Promise<YouTubeInfo> {
   const proc = Bun.spawn([
     "yt-dlp",
@@ -150,7 +160,14 @@ async function fetchYouTubeInfo(url: string): Promise<YouTubeInfo> {
     channel?: string;
     duration?: number;
     webpage_url?: string;
+    live_status?: string;
+    is_live?: boolean;
+    was_live?: boolean;
   };
+
+  if (isLiveVideo(info)) {
+    throw new Error("Live videos are not supported");
+  }
 
   return {
     url: info.webpage_url ?? url,
