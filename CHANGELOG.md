@@ -1,3 +1,10 @@
+## [1.14.1](https://github.com/obviyus/chanson.live/compare/v1.14.0...v1.14.1) (2026-03-20)
+
+
+### Bug Fixes
+
+* block live youtube videos ([c40aaec](https://github.com/obviyus/chanson.live/commit/c40aaec62470ce6bd59102aba39d1a2243cab4d8))
+
 # [1.14.0](https://github.com/obviyus/chanson.live/compare/v1.13.0...v1.14.0) (2026-01-13)
 
 
