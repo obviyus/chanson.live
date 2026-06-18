@@ -73,7 +73,7 @@ const mediasoupConfig = {
     initialAvailableIncomingBitrate: 1_000_000,
     maxIncomingBitrate: 1_500_000,
     enableUdp: true,
-    enableTcp: true,
+    enableTcp: false,
     preferUdp: true,
   },
 };
