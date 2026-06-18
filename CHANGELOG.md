@@ -1,3 +1,10 @@
+## [1.14.2](https://github.com/obviyus/chanson.live/compare/v1.14.1...v1.14.2) (2026-06-18)
+
+
+### Bug Fixes
+
+* **chanson:** disable mediasoup tcp transport ([295b1ff](https://github.com/obviyus/chanson.live/commit/295b1ff2a9e5a125ade1a2f50ee67a9df315dad2))
+
 ## [1.14.1](https://github.com/obviyus/chanson.live/compare/v1.14.0...v1.14.1) (2026-03-20)
 
 
