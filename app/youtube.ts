@@ -1,5 +1,4 @@
 import { join } from "path";
-import { AUDIO_QUALITY, DOWNLOAD_DIR } from "./config";
 
 export interface YouTubeInfo {
   id: string;
@@ -107,19 +106,32 @@ export async function fetchYouTubeInfo(url: string): Promise<YouTubeInfo> {
   };
 }
 
+export interface DownloadOptions {
+  directory: string;
+  quality: string;
+  retry?: { attempts: number; fragments: number; sleep: string };
+}
+
 export async function downloadYouTubeAudio(
   url: string,
-  id: string
+  id: string,
+  options: DownloadOptions
 ): Promise<string> {
-  const outputTemplate = join(DOWNLOAD_DIR, `${id}.%(ext)s`);
-
+  const outputTemplate = join(options.directory, `${id}.%(ext)s`);
+  const expectedPath = join(options.directory, `${id}.mp3`);
+  // AIDEV-NOTE: Delegate retries to yt-dlp; keep only basic output validation here.
   const proc = Bun.spawn([
     "yt-dlp",
     "-x",
     "--audio-format",
     "mp3",
     "--audio-quality",
-    AUDIO_QUALITY,
+    options.quality,
+    ...(options.retry ? [
+      "--retries", String(options.retry.attempts),
+      "--fragment-retries", String(options.retry.fragments),
+      "--retry-sleep", options.retry.sleep,
+    ] : []),
     "--no-playlist",
     "--no-warnings",
     "-o",
@@ -140,9 +152,13 @@ export async function downloadYouTubeAudio(
     throw new Error(`yt-dlp download failed (${exitCode}): ${stderr.trim() || stdout.trim()}`);
   }
 
-  const expectedPath = join(DOWNLOAD_DIR, `${id}.mp3`);
-  if (!(await Bun.file(expectedPath).exists())) {
+  const file = Bun.file(expectedPath);
+  if (!(await file.exists())) {
     throw new Error("yt-dlp finished but output file missing");
+  }
+  if (file.size === 0) {
+    await file.delete();
+    throw new Error("yt-dlp finished but output file was empty");
   }
 
   return expectedPath;

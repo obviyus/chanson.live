@@ -20,11 +20,6 @@ function toTrackMetadata(row: QueueItem & Track): TrackMetadata {
   };
 }
 
-export function initQueue(db: Database): void {
-  queueSnapshot = getQueue(db).map((row) => toTrackMetadata(row));
-  broadcastQueue(queueSnapshot);
-}
-
 export function getQueueSnapshot(): TrackMetadata[] {
   return queueSnapshot;
 }
@@ -44,8 +39,7 @@ export function enqueueTrack(
   requestedBy: string | null
 ): void {
   addToQueue(db, track.id, requestedBy);
-  queueSnapshot = getQueue(db).map((row) => toTrackMetadata(row));
-  broadcastQueue(queueSnapshot);
+  refreshQueue(db);
 }
 
 export async function popNextTrack(db: Database): Promise<TrackMetadata | null> {
@@ -57,7 +51,6 @@ export async function popNextTrack(db: Database): Promise<TrackMetadata | null> 
   if (!(await file.exists())) return null;
 
   removeFromQueue(db, next.id);
-  queueSnapshot = getQueue(db).map((row) => toTrackMetadata(row));
-  broadcastQueue(queueSnapshot);
+  refreshQueue(db);
   return toTrackMetadata(next);
 }

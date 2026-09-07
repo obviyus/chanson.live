@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { PORT } from "./config";
-import { normalizeYouTubeUrl } from "./youtube";
+import { normalizeYouTubeUrl } from "../youtube";
 
 /**
  * AIDEV-NOTE: This script imports index.ts, which starts the server as a side-effect.

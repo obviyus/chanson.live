@@ -148,12 +148,18 @@ External providers upload audio as raw binary chunks over WebSocket (not base64)
 ## Testing
 
 ```bash
+bun test app/tests
+bunx tsc --noEmit
+
 # E2E test with a specific video
 bun run test:e2e "https://www.youtube.com/watch?v=..."
 
 # Test page
 open http://localhost:3000/test
 ```
+
+YouTube metadata and downloads share `app/youtube.ts`. The server and external
+provider pass their download directory, audio quality, and retry settings.
 
 ## Notes
 

@@ -8,7 +8,7 @@ import {
   isBlacklisted,
   updateTrackFilePathBySourceId,
 } from "./db/queries";
-import { normalizeYouTubeUrl } from "./youtube";
+import { normalizeYouTubeUrl } from "../youtube";
 import { ensureLocalTrackFromYouTubeUrl } from "./tracks";
 import { canUseExternalProvider, requestTrackFromProvider } from "./provider";
 
