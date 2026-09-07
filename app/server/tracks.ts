@@ -1,5 +1,6 @@
 import type { Database } from "bun:sqlite";
 import type { Track } from "./db/schema";
+import { AUDIO_QUALITY, DOWNLOAD_DIR } from "./config";
 import {
   getTrackBySourceId,
   insertTrack,
@@ -9,7 +10,7 @@ import {
   normalizeYouTubeUrl,
   fetchYouTubeInfo,
   downloadYouTubeAudio,
-} from "./youtube";
+} from "../youtube";
 
 export async function ensureLocalTrackFromYouTubeUrl(
   db: Database,
@@ -21,19 +22,20 @@ export async function ensureLocalTrackFromYouTubeUrl(
   }
 
   const existing = getTrackBySourceId(db, "youtube", normalized.id);
-  if (existing) {
-    if (existing.file_path && (await Bun.file(existing.file_path).exists())) {
-      return existing;
-    }
-
-    await fetchYouTubeInfo(normalized.url);
-    const filePath = await downloadYouTubeAudio(normalized.url, normalized.id);
-    updateTrackFilePath(db, existing.id, filePath);
-    return { ...existing, file_path: filePath };
+  if (existing?.file_path && (await Bun.file(existing.file_path).exists())) {
+    return existing;
   }
 
   const info = await fetchYouTubeInfo(normalized.url);
-  const filePath = await downloadYouTubeAudio(normalized.url, info.id);
+  const filePath = await downloadYouTubeAudio(normalized.url, normalized.id, {
+    directory: DOWNLOAD_DIR,
+    quality: AUDIO_QUALITY,
+  });
+
+  if (existing) {
+    updateTrackFilePath(db, existing.id, filePath);
+    return { ...existing, file_path: filePath };
+  }
 
   return insertTrack(db, {
     source: "youtube",

@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { join } from "path";
+import { fetchYouTubeInfo, downloadYouTubeAudio } from "../youtube";
 
 const broadcasterUrl = Bun.env.BROADCASTER_URL ?? "";
 const providerToken = Bun.env.PROVIDER_TOKEN ?? "";
@@ -94,7 +94,15 @@ async function handleRequest(request: RequestTrack): Promise<void> {
     })
   );
 
-  const filePath = await downloadYouTubeAudio(info.url, request.source_id);
+  const filePath = await downloadYouTubeAudio(info.url, request.source_id, {
+    directory: downloadDir,
+    quality: audioQuality,
+    retry: {
+      attempts: ytDlpRetries,
+      fragments: ytDlpFragmentRetries,
+      sleep: ytDlpRetrySleep,
+    },
+  });
 
   console.log(`[provider] uploading ${request.source_id}.mp3`);
   await uploadFileOverWebSocket(request.source_id, filePath);
@@ -109,121 +117,6 @@ async function handleRequest(request: RequestTrack): Promise<void> {
   );
 
   await Bun.file(filePath).delete();
-}
-
-interface YouTubeInfo {
-  url: string;
-  title: string;
-  uploader: string | null;
-  duration_sec: number | null;
-}
-
-function isLiveVideo(info: {
-  live_status?: string;
-  is_live?: boolean;
-  was_live?: boolean;
-}): boolean {
-  return info.live_status !== undefined
-    ? info.live_status !== "not_live"
-    : info.is_live === true || info.was_live === true;
-}
-
-async function fetchYouTubeInfo(url: string): Promise<YouTubeInfo> {
-  const proc = Bun.spawn([
-    "yt-dlp",
-    "--dump-json",
-    "--skip-download",
-    "--no-playlist",
-    "--no-warnings",
-    url,
-  ], {
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-
-  const [stdout, stderr] = await Promise.all([
-    new Response(proc.stdout).text(),
-    new Response(proc.stderr).text(),
-  ]);
-  const exitCode = await proc.exited;
-
-  if (exitCode !== 0) {
-    throw new Error(`yt-dlp failed (${exitCode}): ${stderr.trim() || "unknown error"}`);
-  }
-
-  const line = stdout.trim().split("\n").pop();
-  if (!line) throw new Error("yt-dlp returned empty output");
-
-  const info = JSON.parse(line) as {
-    title: string;
-    uploader?: string;
-    channel?: string;
-    duration?: number;
-    webpage_url?: string;
-    live_status?: string;
-    is_live?: boolean;
-    was_live?: boolean;
-  };
-
-  if (isLiveVideo(info)) {
-    throw new Error("Live videos are not supported");
-  }
-
-  return {
-    url: info.webpage_url ?? url,
-    title: info.title,
-    uploader: info.uploader ?? info.channel ?? null,
-    duration_sec: typeof info.duration === "number" ? info.duration : null,
-  };
-}
-
-async function downloadYouTubeAudio(url: string, id: string): Promise<string> {
-  const outputTemplate = join(downloadDir, `${id}.%(ext)s`);
-  const expectedPath = join(downloadDir, `${id}.mp3`);
-  // AIDEV-NOTE: Delegate retries to yt-dlp; keep only basic output validation here.
-  const proc = Bun.spawn([
-    "yt-dlp",
-    "-x",
-    "--audio-format",
-    "mp3",
-    "--audio-quality",
-    audioQuality,
-    "--retries",
-    String(ytDlpRetries),
-    "--fragment-retries",
-    String(ytDlpFragmentRetries),
-    "--retry-sleep",
-    ytDlpRetrySleep,
-    "--no-playlist",
-    "--no-warnings",
-    "-o",
-    outputTemplate,
-    url,
-  ], {
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-
-  const [stdout, stderr] = await Promise.all([
-    new Response(proc.stdout).text(),
-    new Response(proc.stderr).text(),
-  ]);
-  const exitCode = await proc.exited;
-
-  if (exitCode !== 0) {
-    throw new Error(`yt-dlp download failed (${exitCode}): ${stderr.trim() || stdout.trim()}`);
-  }
-
-  const file = Bun.file(expectedPath);
-  if (!(await file.exists())) {
-    throw new Error("yt-dlp finished but output file missing");
-  }
-  if (file.size === 0) {
-    await file.delete();
-    throw new Error("yt-dlp finished but output file was empty");
-  }
-
-  return expectedPath;
 }
 
 async function uploadFileOverWebSocket(sourceId: string, filePath: string): Promise<void> {

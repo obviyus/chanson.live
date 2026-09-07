@@ -25,14 +25,12 @@ interface ProviderUploadState {
   sourceId: string;
   filePath: string;
   writer: FileSink;
-  bytes: number;
 }
 
 let dbRef: Database | null = null;
 let providerSocket: ServerWebSocket<ProviderData> | null = null;
 let providerReady = false;
 const pendingSourceIds = new Set<string>();
-const pendingByRequest = new Map<string, string>();
 let statusListener: ((status: ProviderStatus) => void) | null = null;
 let errorListener: ((payload: { sourceId: string; message: string }) => void) | null = null;
 // AIDEV-NOTE: Provider upload is streamed over WebSocket; single in-flight upload to avoid interleaving.
@@ -89,7 +87,6 @@ export function unregisterProviderSocket(ws: ServerWebSocket<ProviderData>): voi
     providerSocket = null;
     providerReady = false;
     pendingSourceIds.clear();
-    pendingByRequest.clear();
     if (activeUpload) {
       void activeUpload.writer.end();
       void Bun.file(activeUpload.filePath).delete();
@@ -138,7 +135,6 @@ export function handleProviderMessage(
         sourceId: message.source_id,
         filePath,
         writer,
-        bytes: 0,
       };
       return;
     }
@@ -171,12 +167,10 @@ export function handleProviderMessage(
     }
     case "track_uploaded": {
       pendingSourceIds.delete(message.source_id);
-      pendingByRequest.delete(message.request_id);
       return;
     }
     case "track_error": {
       pendingSourceIds.delete(message.source_id);
-      pendingByRequest.delete(message.request_id);
       const track = getTrackBySourceId(dbRef, "youtube", message.source_id);
       if (track) {
         removeFromQueueByTrackId(dbRef, track.id);
@@ -207,7 +201,6 @@ export function requestTrackFromProvider(
   };
 
   pendingSourceIds.add(sourceId);
-  pendingByRequest.set(requestId, sourceId);
   providerSocket.send(JSON.stringify(message));
   return true;
 }
@@ -232,7 +225,7 @@ export function handleProviderBinaryChunk(
   }
 
   const chunk = message instanceof Uint8Array ? message : new Uint8Array(message);
-  activeUpload.bytes += activeUpload.writer.write(chunk);
+  activeUpload.writer.write(chunk);
 }
 
 async function finalizeUpload(sourceId: string): Promise<void> {

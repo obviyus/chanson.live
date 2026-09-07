@@ -8,6 +8,7 @@ import type {
   ProviderStatus,
 } from "./types";
 import { mediasoupHandler } from "./mediasoup";
+import { getQueueSnapshot } from "./queue";
 import {
   getProviderStatus,
   handleProviderBinaryChunk,
@@ -35,9 +36,6 @@ type AnySocket = ServerWebSocket<ClientData> | ServerWebSocket<ProviderData>;
 
 // Track all connected clients
 const clients = new Map<string, ServerWebSocket<ClientData>>();
-
-// Current queue (will be managed by queue.ts)
-let currentQueue: TrackMetadata[] = [];
 
 /**
  * Generate a unique client ID.
@@ -94,7 +92,6 @@ function broadcastClientCount(): void {
  * Broadcast queue update to all clients.
  */
 export function broadcastQueue(queue: TrackMetadata[]): void {
-  currentQueue = queue;
   broadcast({ type: "queue_update", queue });
 }
 
@@ -159,7 +156,7 @@ async function handleMessage(
           },
         });
         // Also send current queue
-        send(ws, { type: "queue_update", queue: currentQueue });
+        send(ws, { type: "queue_update", queue: getQueueSnapshot() });
       } catch (error) {
         console.error(`[ws] Failed to create transport for ${clientId}:`, error);
         send(ws, { type: "error", message: "Failed to create transport" });
@@ -235,7 +232,7 @@ export const websocketHandler = {
     broadcastClientCount();
 
     // Send current queue
-    send(ws, { type: "queue_update", queue: currentQueue });
+    send(ws, { type: "queue_update", queue: getQueueSnapshot() });
 
     // If producer is active, notify client
     if (mediasoupHandler.hasActiveProducer() && mediasoupHandler.producer) {

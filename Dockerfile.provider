@@ -13,5 +13,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY app/provider ./app/provider
+COPY app/youtube.ts ./app/youtube.ts
 
 CMD ["/bin/bash", "-lc", "exec bun run app/provider/index.ts"]

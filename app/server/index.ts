@@ -10,7 +10,7 @@ import {
   STUN_URLS,
 } from "./config";
 import { websocketHandler, upgradeToWebSocket, createClientData } from "./websocket";
-import { initQueue, getQueueSnapshot, refreshQueue } from "./queue";
+import { getQueueSnapshot, refreshQueue } from "./queue";
 import { handleQueueRequest } from "./requests";
 import { Player } from "./player";
 import { TEST_PAGE_HTML } from "./test-page";
@@ -26,7 +26,7 @@ import {
   getTracksBySourceIds,
 } from "./db/queries";
 import { join } from "path";
-import { normalizeYouTubeUrl } from "./youtube";
+import { normalizeYouTubeUrl } from "../youtube";
 import { ADMIN_PAGE_HTML } from "./admin-page";
 
 const corsHeaders = {
@@ -49,7 +49,7 @@ function json(data: unknown, init: ResponseInit = {}): Response {
 await ensureDirectories();
 
 const db = initDatabase(DB_PATH);
-initQueue(db);
+refreshQueue(db);
 initProvider(db);
 
 const player = new Player(db);
